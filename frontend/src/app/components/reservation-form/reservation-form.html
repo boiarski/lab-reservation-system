@@ -1,0 +1,13 @@
+<h2>Reserve Equipment</h2>
+
+<p>Equipment ID: {{ equipmentId }}</p>
+
+<form (ngSubmit)="submit()">
+  <label>Start Date:</label><br>
+  <input type="date" [(ngModel)]="startDate" name="startDate" required><br><br>
+
+  <label>End Date:</label><br>
+  <input type="date" [(ngModel)]="endDate" name="endDate" required><br><br>
+
+  <button type="submit">Reserve</button>
+</form>

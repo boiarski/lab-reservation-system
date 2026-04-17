@@ -1,0 +1,13 @@
+<h2>Equipment List</h2>
+<button routerLink="/reservations">View Reservations</button>
+
+<ul>
+  @for (item of equipment(); track item.id) {
+    <li>
+      {{ item.name }}
+      <button (click)='reserve(item)'>Reserve</button>
+    </li>
+  } @empty {
+    <li>No equipment found.</li>
+  }
+</ul>

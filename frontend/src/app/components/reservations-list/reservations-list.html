@@ -1,0 +1,12 @@
+<h2>Reservations</h2>
+
+<ul>
+  @for (r of reservations(); track r.id) {
+    <li>
+      Equipment {{ r.equipment_id }} |
+      {{ r.start_date }} → {{ r.end_date }}
+    </li>
+  } @empty {
+    <p>No reservations scheduled.</p>
+  }
+</ul>

@@ -1,0 +1,13 @@
+version: "3.8"
+
+services:
+  db:
+    image: postgres:15
+    container_name: lab_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: lab_user
+      POSTGRES_PASSWORD: lab_pass
+      POSTGRES_DB: lab_db
+    ports:
+      - "5432:5432"
