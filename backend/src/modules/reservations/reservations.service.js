@@ -147,9 +147,109 @@ async function completeReservation({ userId, reservationId }) {
     return updateResult.rows[0];
 }
 
+async function getPendingReservations() {
+    const result = await pool.query(
+        `SELECT r.id, r.user_id, u.name AS user_name, u.email AS user_email, r.equipment_id, e.name AS equipment_name, r.start_date, r.end_date, r.status, r.justification, r.created_at FROM reservations r JOIN users u ON u.id = r.user_id JOIN equipment e ON e.id = r.equipment_id WHERE r.status = 'pending_approval' ORDER BY r.created_at ASC`
+    );
+
+    return result.rows;
+}
+
+async function approveReservation({ reservationId, reviewerId }) {
+    const existingResult = await pool.query(
+        `SELECT * FROM reservations WHERE id = $1`,
+        [reservationId]
+    );
+
+    if (existingResult.rows.length === 0) {
+        throw new Error('Reservation not found');
+    }
+
+    const reservation = existingResult.rows[0];
+
+    if (reservation.status !== 'pending_approval') {
+        throw new Error('Only pending reservations can be approved');
+    }
+
+    const updateResult = await pool.query(
+        `UPDATE reservations SET status = 'approved', approved_by = $1, approved_at = NOW() WHERE id = $2 RETURNING *`,
+        [reviewerId, reservationId]
+    );
+
+    return updateResult.rows[0];
+}
+
+async function rejectReservation({
+    reservationId,
+    reviewerId,
+    reason,
+    suggestedStartDate,
+    suggestedEndDate
+}) {
+    if (!reason || !reason.trim()) {
+        throw new Error('Rejection reason is required');
+    }
+
+    const existingResult = await pool.query(
+        `SELECT * FROM reservations WHERE id = $1`,
+        [reservationId]
+    );
+
+    if (existingResult.rows.length === 0) {
+        throw new Error('Reservation not found');
+    }
+
+    const reservation = existingResult.rows[0];
+
+    if (reservation.status !== 'pending_approval') {
+        throw new Error('Only pending reservations can be rejected');
+    }
+
+    if ((suggestedStartDate && !suggestedEndDate) || (!suggestedStartDate && suggestedEndDate)) {
+        throw new Error('Both suggestedStartDate and suggestedEndDate must be provided together');
+    }
+
+    if (suggestedStartDate && suggestedEndDate) {
+        const start = new Date(suggestedStartDate);
+        const end = new Date(suggestedEndDate);
+
+        if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+            throw new Error('Invalid suggested reservation dates');
+        }
+
+        if (start > end) {
+            throw new Error('Suggested start date cannot be after suggested end date');
+        }
+    }
+
+    const updateResult = await pool.query(
+        `UPDATE reservations
+         SET status = 'rejected',
+             rejection_reason = $1,
+             suggested_start_date = $2,
+             suggested_end_date = $3,
+             approved_by = $4,
+             approved_at = NOW()
+         WHERE id = $5
+         RETURNING *`,
+        [
+            reason,
+            suggestedStartDate || null,
+            suggestedEndDate || null,
+            reviewerId,
+            reservationId
+        ]
+    );
+
+    return updateResult.rows[0];
+}
+
 module.exports = {
     getMyReservations,
     createReservation,
     cancelReservation,
-    completeReservation
+    completeReservation,
+    getPendingReservations,
+    approveReservation,
+    rejectReservation
 };

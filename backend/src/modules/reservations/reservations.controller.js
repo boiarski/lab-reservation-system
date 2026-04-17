@@ -122,9 +122,101 @@ async function completeReservation(req, res) {
     }
 }
 
+async function getPendingReservations(req, res) {
+    try {
+        const reservations = await reservationsService.getPendingReservations();
+
+        return res.status(200).json(reservations);
+    } catch (error) {
+        console.error('Get pending reservations error:', error);
+
+        return res.status(500).json({
+            message: 'Error fetching pending reservations',
+            debug: error.message
+        });
+    }
+}
+
+async function approveReservation(req, res) {
+    const { id } = req.params;
+
+    try {
+        const reservation = await reservationsService.approveReservation({
+            reservationId: id,
+            reviewerId: req.user.id
+        });
+
+        return res.status(200).json({
+            message: 'Reservation approved successfully',
+            reservation
+        });
+    } catch (error) {
+        console.error('Approve reservation error:', error);
+
+        if (error.message === 'Reservation not found') {
+            return res.status(404).json({ message: error.message });
+        }
+
+        if (error.message === 'Only pending reservations can be approved') {
+            return res.status(400).json({ message: error.message });
+        }
+
+        return res.status(500).json({
+            message: 'Error approving reservation',
+            debug: error.message
+        });
+    }
+}
+
+async function rejectReservation(req, res) {
+    const { id } = req.params;
+    const { reason, suggestedStartDate, suggestedEndDate } = req.body;
+
+    try {
+        const reservation = await reservationsService.rejectReservation({
+            reservationId: id,
+            reviewerId: req.user.id,
+            reason,
+            suggestedStartDate,
+            suggestedEndDate
+        });
+
+        return res.status(200).json({
+            message: 'Reservation rejected successfully',
+            reservation
+        });
+    } catch (error) {
+        console.error('Reject reservation error:', error);
+
+        if (error.message === 'Reservation not found') {
+            return res.status(404).json({ message: error.message });
+        }
+
+        const knownErrors = [
+            'Only pending reservations can be rejected',
+            'Rejection reason is required',
+            'Both suggestedStartDate and suggestedEndDate must be provided together',
+            'Invalid suggested reservation dates',
+            'Suggested start date cannot be after suggested end date'
+        ];
+
+        if (knownErrors.includes(error.message)) {
+            return res.status(400).json({ message: error.message });
+        }
+
+        return res.status(500).json({
+            message: 'Error rejecting reservation',
+            debug: error.message
+        });
+    }
+}
+
 module.exports = {
     getMyReservations,
     createReservation,
     cancelReservation,
-    completeReservation
+    completeReservation,
+    getPendingReservations,
+    approveReservation,
+    rejectReservation
 };
