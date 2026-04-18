@@ -120,9 +120,83 @@ async function dismissReport({ reportId, reviewerId }) {
     return updatedReport.rows[0];
 }
 
+async function getAllEquipment() {
+    const result = await pool.query(
+        `SELECT
+            id,
+            name,
+            description,
+            status,
+            created_at
+         FROM equipment
+         ORDER BY id ASC`
+    );
+
+    return result.rows;
+}
+
+async function getEquipmentById(equipmentId) {
+    const result = await pool.query(
+        `SELECT
+            id,
+            name,
+            description,
+            status,
+            created_at
+         FROM equipment
+         WHERE id = $1`,
+        [equipmentId]
+    );
+
+    if (result.rows.length === 0) {
+        throw new Error('Equipment not found');
+    }
+
+    return result.rows[0];
+}
+
+async function getEquipmentAvailability(equipmentId) {
+    const equipmentResult = await pool.query(
+        `SELECT
+            id,
+            name,
+            description,
+            status,
+            created_at
+         FROM equipment
+         WHERE id = $1`,
+        [equipmentId]
+    );
+
+    if (equipmentResult.rows.length === 0) {
+        throw new Error('Equipment not found');
+    }
+
+    const reservationsResult = await pool.query(
+        `SELECT
+            id,
+            start_date,
+            end_date,
+            status
+         FROM reservations
+         WHERE equipment_id = $1
+           AND status IN ('approved', 'pending_approval')
+         ORDER BY start_date ASC`,
+        [equipmentId]
+    );
+
+    return {
+        equipment: equipmentResult.rows[0],
+        reservations: reservationsResult.rows
+    };
+}
+
 module.exports = {
     reportIssue,
     getPendingReports,
     confirmReport,
-    dismissReport
+    dismissReport,
+    getAllEquipment,
+    getEquipmentById,
+    getEquipmentAvailability
 };

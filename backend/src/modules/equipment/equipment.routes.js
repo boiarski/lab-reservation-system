@@ -7,24 +7,17 @@ const equipmentController = require('./equipment.controller');
 
 router.use(authMiddleware);
 
+router.get('/', equipmentController.getAllEquipment);
+
+router.get('/reports/pending', roleMiddleware(['helper', 'admin']), equipmentController.getPendingReports);
+
+router.get('/:id/availability', equipmentController.getEquipmentAvailability);
+router.get('/:id', equipmentController.getEquipmentById);
+
 router.post('/:id/report-issue', equipmentController.reportIssue);
 
-router.get(
-    '/reports/pending',
-    roleMiddleware(['helper', 'admin']),
-    equipmentController.getPendingReports
-);
+router.patch('/reports/:id/confirm', roleMiddleware(['helper', 'admin']), equipmentController.confirmReport);
 
-router.patch(
-    '/reports/:id/confirm',
-    roleMiddleware(['helper', 'admin']),
-    equipmentController.confirmReport
-);
-
-router.patch(
-    '/reports/:id/dismiss',
-    roleMiddleware(['helper', 'admin']),
-    equipmentController.dismissReport
-);
+router.patch('/reports/:id/dismiss', roleMiddleware(['helper', 'admin']), equipmentController.dismissReport);
 
 module.exports = router;

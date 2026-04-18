@@ -116,9 +116,69 @@ async function dismissReport(req, res) {
     }
 }
 
+async function getAllEquipment(req, res) {
+    try {
+        const equipment = await equipmentService.getAllEquipment();
+
+        return res.status(200).json(equipment);
+    } catch (error) {
+        console.error('Get all equipment error:', error);
+
+        return res.status(500).json({
+            message: 'Error fetching equipment',
+            debug: error.message
+        });
+    }
+}
+
+async function getEquipmentById(req, res) {
+    const { id } = req.params;
+
+    try {
+        const equipment = await equipmentService.getEquipmentById(id);
+
+        return res.status(200).json(equipment);
+    } catch (error) {
+        console.error('Get equipment by id error:', error);
+
+        if (error.message === 'Equipment not found') {
+            return res.status(404).json({ message: error.message });
+        }
+
+        return res.status(500).json({
+            message: 'Error fetching equipment details',
+            debug: error.message
+        });
+    }
+}
+
+async function getEquipmentAvailability(req, res) {
+    const { id } = req.params;
+
+    try {
+        const availability = await equipmentService.getEquipmentAvailability(id);
+
+        return res.status(200).json(availability);
+    } catch (error) {
+        console.error('Get equipment availability error:', error);
+
+        if (error.message === 'Equipment not found') {
+            return res.status(404).json({ message: error.message });
+        }
+
+        return res.status(500).json({
+            message: 'Error fetching equipment availability',
+            debug: error.message
+        });
+    }
+}
+
 module.exports = {
     reportIssue,
     getPendingReports,
     confirmReport,
-    dismissReport
+    dismissReport,
+    getAllEquipment,
+    getEquipmentById,
+    getEquipmentAvailability
 };
