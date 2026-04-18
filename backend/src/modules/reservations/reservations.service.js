@@ -223,15 +223,7 @@ async function rejectReservation({
     }
 
     const updateResult = await pool.query(
-        `UPDATE reservations
-         SET status = 'rejected',
-             rejection_reason = $1,
-             suggested_start_date = $2,
-             suggested_end_date = $3,
-             approved_by = $4,
-             approved_at = NOW()
-         WHERE id = $5
-         RETURNING *`,
+        `UPDATE reservations SET status = 'rejected', rejection_reason = $1, suggested_start_date = $2, suggested_end_date = $3, approved_by = $4, approved_at = NOW() WHERE id = $5 RETURNING *`,
         [
             reason,
             suggestedStartDate || null,

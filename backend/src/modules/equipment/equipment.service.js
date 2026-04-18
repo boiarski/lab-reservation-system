@@ -33,21 +33,7 @@ async function reportIssue({ equipmentId, reportedBy, reason }) {
 
 async function getPendingReports() {
     const result = await pool.query(
-        `SELECT
-            er.id,
-            er.equipment_id,
-            e.name AS equipment_name,
-            er.reported_by,
-            u.name AS reported_by_name,
-            u.email AS reported_by_email,
-            er.reason,
-            er.status,
-            er.created_at
-         FROM equipment_reports er
-         JOIN equipment e ON e.id = er.equipment_id
-         JOIN users u ON u.id = er.reported_by
-         WHERE er.status = 'pending'
-         ORDER BY er.created_at ASC`
+        `SELECT er.id, er.equipment_id, e.name AS equipment_name, er.reported_by, u.name AS reported_by_name, u.email AS reported_by_email, er.reason, er.status, er.created_at FROM equipment_reports er JOIN equipment e ON e.id = er.equipment_id JOIN users u ON u.id = er.reported_by WHERE er.status = 'pending' ORDER BY er.created_at ASC`
     );
 
     return result.rows;
@@ -108,12 +94,7 @@ async function dismissReport({ reportId, reviewerId }) {
     }
 
     const updatedReport = await pool.query(
-        `UPDATE equipment_reports
-         SET status = 'dismissed',
-             reviewed_by = $1,
-             reviewed_at = NOW()
-         WHERE id = $2
-         RETURNING *`,
+        `UPDATE equipment_reports SET status = 'dismissed', reviewed_by = $1, reviewed_at = NOW() WHERE id = $2 RETURNING *`,
         [reviewerId, reportId]
     );
 
@@ -122,14 +103,7 @@ async function dismissReport({ reportId, reviewerId }) {
 
 async function getAllEquipment() {
     const result = await pool.query(
-        `SELECT
-            id,
-            name,
-            description,
-            status,
-            created_at
-         FROM equipment
-         ORDER BY id ASC`
+        `SELECT id, name, description, status, created_at FROM equipment ORDER BY id ASC`
     );
 
     return result.rows;
@@ -137,14 +111,7 @@ async function getAllEquipment() {
 
 async function getEquipmentById(equipmentId) {
     const result = await pool.query(
-        `SELECT
-            id,
-            name,
-            description,
-            status,
-            created_at
-         FROM equipment
-         WHERE id = $1`,
+        `SELECT id, name, description, status, created_at FROM equipment WHERE id = $1`,
         [equipmentId]
     );
 
@@ -157,14 +124,7 @@ async function getEquipmentById(equipmentId) {
 
 async function getEquipmentAvailability(equipmentId) {
     const equipmentResult = await pool.query(
-        `SELECT
-            id,
-            name,
-            description,
-            status,
-            created_at
-         FROM equipment
-         WHERE id = $1`,
+        `SELECT id, name, description, status, created_at FROM equipment WHERE id = $1`,
         [equipmentId]
     );
 
@@ -173,15 +133,7 @@ async function getEquipmentAvailability(equipmentId) {
     }
 
     const reservationsResult = await pool.query(
-        `SELECT
-            id,
-            start_date,
-            end_date,
-            status
-         FROM reservations
-         WHERE equipment_id = $1
-           AND status IN ('approved', 'pending_approval')
-         ORDER BY start_date ASC`,
+        `SELECT id, start_date, end_date, status FROM reservations WHERE equipment_id = $1 AND status IN ('approved', 'pending_approval') ORDER BY start_date ASC`,
         [equipmentId]
     );
 

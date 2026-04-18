@@ -15,10 +15,7 @@ exports.createReservation = async (req, res) => {
 
     try {
         const conflict = await pool.query(
-            `SELECT * FROM reservations 
-            WHERE equipment_id = $1 
-            AND start_date <= $3 
-            AND end_date >= $2`,
+            `SELECT * FROM reservations WHERE equipment_id = $1 AND start_date <= $3 AND end_date >= $2`,
             [equipment_id, start_date, end_date]
         );
 
@@ -94,11 +91,7 @@ exports.updateReservation = async (req, res) => {
         const reservation = existing.rows[0];
 
         const conflict = await pool.query(
-            `SELECT * FROM reservations WHERE equipment_id = $1 AND id != $2 AND (
-            (start_date <= $3 AND end_date >= $3) OR
-            (start_date <= $4 AND end_date >= $4) OR
-            (start_date >= $3 AND end_date <= $4)
-            )`,
+            `SELECT * FROM reservations WHERE equipment_id = $1 AND id != $2 AND ((start_date <= $3 AND end_date >= $3) OR (start_date <= $4 AND end_date >= $4) OR (start_date >= $3 AND end_date <= $4))`,
             [reservation.equipment_id, id, start_date, end_date]
         );
 
