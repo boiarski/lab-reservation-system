@@ -8,24 +8,16 @@ const usersController = require('./users.controller');
 router.use(authMiddleware);
 
 router.get('/me', usersController.getMe);
+
+router.patch('/me/password', usersController.changeOwnPassword);
 router.delete('/me', usersController.deleteOwnAccount);
 
-router.get(
-    '/',
-    roleMiddleware(['admin']),
-    usersController.getAllUsers
-);
+router.get('/', roleMiddleware(['admin']), usersController.getAllUsers);
 
-router.patch(
-    '/:id/role',
-    roleMiddleware(['admin']),
-    usersController.updateUserRole
-);
+router.post('/', roleMiddleware(['admin']), usersController.createUser);
 
-router.delete(
-    '/:id',
-    roleMiddleware(['admin']),
-    usersController.deleteUser
-);
+router.patch('/:id/role', roleMiddleware(['admin']), usersController.updateUserRole);
+
+router.delete('/:id', roleMiddleware(['admin']), usersController.deleteUser);
 
 module.exports = router;

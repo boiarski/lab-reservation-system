@@ -3,26 +3,6 @@ const jwt = require('jsonwebtoken');
 const pool = require('../../db');
 const { jwtSecret, jwtExpiresIn } = require('../../config/auth');
 
-async function registerUser({ name, email, password }) {
-    const existingUser = await pool.query(
-        'SELECT id FROM users WHERE email = $1',
-        [email]
-    );
-
-    if (existingUser.rows.length > 0) {
-        throw new Error('Email already in use');
-    }
-
-    const passwordHash = await bcrypt.hash(password, 10);
-
-    const result = await pool.query(
-        `INSERT INTO users (name, email, password_hash, role) VALUES ($1, $2, $3, 'user') RETURNING id, name, email, role, active, created_at`,
-        [name, email, passwordHash]
-    );
-
-    return result.rows[0];
-}
-
 async function loginUser({ email, password }) {
     const result = await pool.query(
         `SELECT id, name, email, password_hash, role, active FROM users WHERE email = $1`,
@@ -67,6 +47,5 @@ async function loginUser({ email, password }) {
 }
 
 module.exports = {
-    registerUser,
     loginUser
 };
