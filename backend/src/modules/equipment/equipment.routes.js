@@ -14,6 +14,14 @@ router.get('/reports/pending', roleMiddleware(['helper', 'admin']), equipmentCon
 router.get('/:id/availability', equipmentController.getEquipmentAvailability);
 router.get('/:id', equipmentController.getEquipmentById);
 
+router.post('/', roleMiddleware(['admin']), equipmentController.createEquipment);
+
+router.put('/:id', roleMiddleware(['admin']), equipmentController.updateEquipment);
+
+router.patch('/:id/status', roleMiddleware(['helper', 'admin']), equipmentController.updateEquipmentStatus);
+
+router.delete('/:id', roleMiddleware(['admin']), equipmentController.deleteEquipment);
+
 router.post('/:id/report-issue', equipmentController.reportIssue);
 
 router.patch('/reports/:id/confirm', roleMiddleware(['helper', 'admin']), equipmentController.confirmReport);

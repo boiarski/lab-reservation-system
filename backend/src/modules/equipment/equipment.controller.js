@@ -173,6 +173,122 @@ async function getEquipmentAvailability(req, res) {
     }
 }
 
+async function createEquipment(req, res) {
+    const { name, description } = req.body;
+
+    try {
+        const equipment = await equipmentService.createEquipment({
+            name,
+            description
+        });
+
+        return res.status(201).json({
+            message: 'Equipment created successfully',
+            equipment
+        });
+    } catch (error) {
+        console.error('Create equipment error:', error);
+
+        if (error.message === 'Equipment name is required') {
+            return res.status(400).json({ message: error.message });
+        }
+
+        return res.status(500).json({
+            message: 'Error creating equipment',
+            debug: error.message
+        });
+    }
+}
+
+async function updateEquipment(req, res) {
+    const { id } = req.params;
+    const { name, description } = req.body;
+
+    try {
+        const equipment = await equipmentService.updateEquipment({
+            equipmentId: id,
+            name,
+            description
+        });
+
+        return res.status(200).json({
+            message: 'Equipment updated successfully',
+            equipment
+        });
+    } catch (error) {
+        console.error('Update equipment error:', error);
+
+        if (error.message === 'Equipment not found') {
+            return res.status(404).json({ message: error.message });
+        }
+
+        if (error.message === 'Equipment name is required') {
+            return res.status(400).json({ message: error.message });
+        }
+
+        return res.status(500).json({
+            message: 'Error updating equipment',
+            debug: error.message
+        });
+    }
+}
+
+async function updateEquipmentStatus(req, res) {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    try {
+        const equipment = await equipmentService.updateEquipmentStatus({
+            equipmentId: id,
+            status
+        });
+
+        return res.status(200).json({
+            message: 'Equipment status updated successfully',
+            equipment
+        });
+    } catch (error) {
+        console.error('Update equipment status error:', error);
+
+        if (error.message === 'Equipment not found') {
+            return res.status(404).json({ message: error.message });
+        }
+
+        if (error.message === 'Invalid equipment status') {
+            return res.status(400).json({ message: error.message });
+        }
+
+        return res.status(500).json({
+            message: 'Error updating equipment status',
+            debug: error.message
+        });
+    }
+}
+
+async function deleteEquipment(req, res) {
+    const { id } = req.params;
+
+    try {
+        const equipment = await equipmentService.deleteEquipment(id);
+
+        return res.status(200).json({
+            message: 'Equipment deleted successfully',
+            equipment
+        });
+    } catch (error) {
+        console.error('Delete equipment error:', error);
+
+        if (error.message === 'Equipment not found') {
+            return res.status(404).json({ message: error.message });
+        }
+
+        return res.status(500).json({
+            message: 'Error deleting equipment',
+            debug: error.message
+        });
+    }
+}
+
 module.exports = {
     reportIssue,
     getPendingReports,
@@ -180,5 +296,9 @@ module.exports = {
     dismissReport,
     getAllEquipment,
     getEquipmentById,
-    getEquipmentAvailability
+    getEquipmentAvailability,
+    createEquipment,
+    updateEquipment,
+    updateEquipmentStatus,
+    deleteEquipment
 };

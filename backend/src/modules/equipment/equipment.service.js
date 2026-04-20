@@ -143,6 +143,68 @@ async function getEquipmentAvailability(equipmentId) {
     };
 }
 
+async function createEquipment({ name, description }) {
+    if (!name || !name.trim()) {
+        throw new Error('Equipment name is required');
+    }
+
+    const result = await pool.query(
+        `INSERT INTO equipment (name, description, status) VALUES ($1, $2, 'available') RETURNING *`,
+        [name, description || null]
+    );
+
+    return result.rows[0];
+}
+
+async function updateEquipment({ equipmentId, name, description }) {
+    if (!name || !name.trim()) {
+        throw new Error('Equipment name is required');
+    }
+
+    const result = await pool.query(
+        `UPDATE equipment SET name = $1, description = $2 WHERE id = $3 RETURNING *`,
+        [name, description || null, equipmentId]
+    );
+
+    if (result.rows.length === 0) {
+        throw new Error('Equipment not found');
+    }
+
+    return result.rows[0];
+}
+
+async function updateEquipmentStatus({ equipmentId, status }) {
+    const allowedStatuses = ['available', 'out_of_order'];
+
+    if (!allowedStatuses.includes(status)) {
+        throw new Error('Invalid equipment status');
+    }
+
+    const result = await pool.query(
+        `UPDATE equipment SET status = $1 WHERE id = $2 RETURNING *`,
+        [status, equipmentId]
+    );
+
+    if (result.rows.length === 0) {
+        throw new Error('Equipment not found');
+    }
+
+    return result.rows[0];
+}
+
+async function deleteEquipment(equipmentId) {
+    const result = await pool.query(
+        `DELETE FROM equipment WHERE id = $1 RETURNING *`,
+        [equipmentId]
+    );
+
+    if (result.rows.length === 0) {
+        throw new Error('Equipment not found');
+    }
+
+    return result.rows[0];
+}
+
 module.exports = {
     reportIssue,
     getPendingReports,
@@ -150,5 +212,9 @@ module.exports = {
     dismissReport,
     getAllEquipment,
     getEquipmentById,
-    getEquipmentAvailability
+    getEquipmentAvailability,
+    createEquipment,
+    updateEquipment,
+    updateEquipmentStatus,
+    deleteEquipment
 };

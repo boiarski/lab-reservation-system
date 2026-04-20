@@ -9,6 +9,7 @@ const roleMiddleware = require('./middleware/roleMiddleware');
 const reservationsRoutes = require('./modules/reservations/reservations.routes');
 const equipmentRoutes = require('./modules/equipment/equipment.routes');
 const dashboardRoutes = require('./modules/dashboard/dashboard.routes');
+const usersRoutes = require('./modules/users/users.routes');
 
 const app = express();
 
@@ -35,6 +36,7 @@ app.use('/auth', authRoutes);
 app.use('/reservations', reservationsRoutes);
 app.use('/equipment', equipmentRoutes);
 app.use('/dashboard', dashboardRoutes);
+app.use('/users', usersRoutes);
 
 app.get('/me', authMiddleware, (req, res) => {
     res.json({
