@@ -1,0 +1,101 @@
+<a
+  [routerLink]="['/equipment', equipmentId()]"
+  data-testid="back-equipment-detail-link"
+>
+  Back to equipment details
+</a>
+
+<h1>Create Reservation</h1>
+
+@if (notification()) {
+  <div
+    class="notification"
+    [class.notification-success]="notification()?.type === 'success'"
+    [class.notification-error]="notification()?.type === 'error'"
+    data-testid="reservation-notification"
+  >
+    <p>{{ notification()?.message }}</p>
+
+    <button
+      type="button"
+      (click)="closeNotification()"
+      data-testid="close-reservation-notification-button"
+    >
+      Close
+    </button>
+  </div>
+}
+
+@if (isLoading()) {
+  <p data-testid="reservation-create-loading">
+    Loading equipment...
+  </p>
+}
+
+@if (equipment()) {
+  <section data-testid="reservation-equipment-summary">
+    <h2>{{ equipment().name }}</h2>
+    <p>{{ equipment().description }}</p>
+    <p>Status: {{ equipment().status }}</p>
+  </section>
+
+  @if (equipment().status === 'out_of_order') {
+    <p data-testid="reservation-equipment-out-of-order">
+      This equipment is out of order and cannot be reserved.
+    </p>
+  }
+
+  @if (equipment().status === 'available') {
+    <form (ngSubmit)="submit()" data-testid="reservation-form">
+      <div>
+        <label>Start Date</label>
+        <input
+          type="date"
+          name="startDate"
+          [(ngModel)]="startDate"
+          data-testid="reservation-start-date"
+          required
+        />
+      </div>
+
+      <div>
+        <label>End Date</label>
+        <input
+          type="date"
+          name="endDate"
+          [(ngModel)]="endDate"
+          data-testid="reservation-end-date"
+          required
+        />
+      </div>
+
+      <div>
+        <label>Justification</label>
+        <textarea
+          name="justification"
+          [(ngModel)]="justification"
+          data-testid="reservation-justification"
+          placeholder="Required for reservations longer than 7 days"
+        ></textarea>
+      </div>
+
+      <button
+        type="submit"
+        [disabled]="isSubmitting()"
+        data-testid="reservation-submit"
+      >
+        @if (isSubmitting()) {
+          Submitting...
+        } @else {
+          Create Reservation
+        }
+      </button>
+    </form>
+  }
+
+  @if (notification()?.type === 'success') {
+    <a routerLink="/dashboard" data-testid="go-dashboard-after-reservation">
+      Go to dashboard
+    </a>
+  }
+}

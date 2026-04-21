@@ -45,6 +45,22 @@ export class ApiService {
     );
   }
 
+  confirmEquipmentReport(id: number | string) {
+    return this.http.patch<any>(
+      `${this.baseUrl}/equipment/reports/${id}/confirm`,
+      {},
+      this.getHeaders()
+    );
+  }
+
+  dismissEquipmentReport(id: number | string) {
+    return this.http.patch<any>(
+      `${this.baseUrl}/equipment/reports/${id}/dismiss`,
+      {},
+      this.getHeaders()
+    );
+  }
+
   createReservation(data: any) {
     return this.http.post<any>(
       `${this.baseUrl}/reservations`,
@@ -65,6 +81,22 @@ export class ApiService {
     return this.http.patch<any>(
       `${this.baseUrl}/reservations/${id}/complete`,
       {},
+      this.getHeaders()
+    );
+  }
+
+  approveReservation(id: number | string) {
+    return this.http.patch<any>(
+      `${this.baseUrl}/reservations/${id}/approve`,
+      {},
+      this.getHeaders()
+    );
+  }
+
+  rejectReservation(id: number | string, data: any) {
+    return this.http.patch<any>(
+      `${this.baseUrl}/reservations/${id}/reject`,
+      data,
       this.getHeaders()
     );
   }

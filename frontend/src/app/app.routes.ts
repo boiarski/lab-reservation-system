@@ -1,9 +1,10 @@
 import { Routes } from '@angular/router';
 import { LoginComponent } from './pages/login/login';
+import { authGuard } from './guards/auth-guard';
 import { DashboardComponent } from './pages/dashboard/dashboard';
 import { EquipmentComponent } from './pages/equipment/equipment';
 import { EquipmentDetailComponent } from './pages/equipment-detail/equipment-detail';
-import { authGuard } from './guards/auth-guard';
+import { ReservationCreateComponent } from './pages/reservation-create/reservation-create';
 
 export const routes: Routes = [
   { path: 'login', component: LoginComponent },
@@ -23,6 +24,12 @@ export const routes: Routes = [
   {
     path: 'equipment/:id',
     component: EquipmentDetailComponent,
+    canActivate: [authGuard]
+  },
+
+  {
+    path: 'equipment/:id/reserve',
+    component: ReservationCreateComponent,
     canActivate: [authGuard]
   },
 

@@ -10,28 +10,60 @@
   </a>
 </nav>
 
-@if (errorMessage) {
-  <p data-testid="dashboard-error">
-    {{ errorMessage }}
+@if (notification()) {
+  <div
+    class="notification"
+    [class.notification-success]="notification()?.type === 'success'"
+    [class.notification-error]="notification()?.type === 'error'"
+    data-testid="dashboard-notification"
+  >
+    <p>{{ notification()?.message }}</p>
+
+    <button
+      type="button"
+      (click)="closeNotification()"
+      data-testid="close-notification-button"
+    >
+      Close
+    </button>
+  </div>
+}
+
+@if (isLoading()) {
+  <p data-testid="dashboard-loading">
+    Loading dashboard...
   </p>
 }
 
-@if (dashboard) {
+@if (dashboard()) {
   <div data-testid="dashboard-content">
-    <h2>Welcome, {{ dashboard.user.email }}</h2>
-    <p>Role: {{ dashboard.user.role }}</p>
+    <h2>Welcome, {{ dashboard().user.email }}</h2>
+    <p>Role: {{ dashboard().user.role }}</p>
 
     <section>
       <h3>Warnings</h3>
 
-      @if (dashboard.warnings.length === 0) {
+      @if (dashboard().warnings.length === 0) {
         <p>No warnings.</p>
       }
 
       <ul>
-        @for (warning of dashboard.warnings; track $index) {
+        @for (warning of dashboard().warnings; track $index) {
           <li data-testid="dashboard-warning">
             {{ warning.message }}
+
+            @if (warning.reason) {
+              <p>Reason: {{ warning.reason }}</p>
+            }
+
+            @if (warning.suggestedStartDate && warning.suggestedEndDate) {
+              <p>
+                Suggested period:
+                {{ warning.suggestedStartDate }}
+                to
+                {{ warning.suggestedEndDate }}
+              </p>
+            }
           </li>
         }
       </ul>
@@ -40,47 +72,180 @@
     <section>
       <h3>My Reservations</h3>
 
-      @if (dashboard.myReservations.length === 0) {
-        <p>No reservations found.</p>
+      @if (dashboard().myReservations.length === 0) {
+        <p data-testid="dashboard-no-reservations">
+          No reservations found.
+        </p>
       }
 
       <ul>
-        @for (reservation of dashboard.myReservations; track reservation.id) {
+        @for (reservation of dashboard().myReservations; track reservation.id) {
           <li data-testid="dashboard-reservation">
-            {{ reservation.equipment_name }}
+            <strong>{{ reservation.equipment_name }}</strong>
             —
             {{ reservation.start_date }}
             to
             {{ reservation.end_date }}
             —
             {{ reservation.status }}
+
+            <div>
+              @if (canCancel(reservation)) {
+                <button
+                  type="button"
+                  (click)="cancelReservation(reservation.id)"
+                  [disabled]="actionLoadingId() === reservation.id"
+                  data-testid="cancel-reservation-button"
+                >
+                  Cancel
+                </button>
+              }
+
+              @if (canComplete(reservation)) {
+                <button
+                  type="button"
+                  (click)="completeReservation(reservation.id)"
+                  [disabled]="actionLoadingId() === reservation.id"
+                  data-testid="complete-reservation-button"
+                >
+                  Complete
+                </button>
+              }
+            </div>
           </li>
         }
       </ul>
     </section>
 
-    @if (dashboard.pendingApprovals) {
+    @if (dashboard().pendingApprovals) {
       <section>
         <h3>Pending Approvals</h3>
 
+        @if (dashboard().pendingApprovals.length === 0) {
+          <p>No pending approvals.</p>
+        }
+
         <ul>
-          @for (approval of dashboard.pendingApprovals; track approval.id) {
+          @for (approval of dashboard().pendingApprovals; track approval.id) {
             <li data-testid="pending-approval">
-              {{ approval.equipment_name }} requested by {{ approval.user_email }}
+              <strong>{{ approval.equipment_name }}</strong>
+              requested by {{ approval.user_email }}
+              —
+              {{ approval.start_date }} to {{ approval.end_date }}
+
+              <p>
+                Justification:
+                {{ approval.justification }}
+              </p>
+
+              <button
+                type="button"
+                (click)="approveReservation(approval.id)"
+                [disabled]="actionLoadingId() === approval.id"
+                data-testid="approve-reservation-button"
+              >
+                Approve
+              </button>
+
+              <button
+                type="button"
+                (click)="startRejectReservation(approval.id)"
+                data-testid="start-reject-reservation-button"
+              >
+                Reject
+              </button>
+
+              @if (rejectingReservationId() === approval.id) {
+                <div data-testid="reject-reservation-form">
+                  <div>
+                    <label>Reason</label>
+                    <textarea
+                      name="rejectionReason"
+                      [(ngModel)]="rejectionReason"
+                      data-testid="reject-reason"
+                    ></textarea>
+                  </div>
+
+                  <div>
+                    <label>Suggested Start Date</label>
+                    <input
+                      type="date"
+                      name="suggestedStartDate"
+                      [(ngModel)]="suggestedStartDate"
+                      data-testid="suggested-start-date"
+                    />
+                  </div>
+
+                  <div>
+                    <label>Suggested End Date</label>
+                    <input
+                      type="date"
+                      name="suggestedEndDate"
+                      [(ngModel)]="suggestedEndDate"
+                      data-testid="suggested-end-date"
+                    />
+                  </div>
+
+                  <button
+                    type="button"
+                    (click)="submitRejectReservation(approval.id)"
+                    [disabled]="actionLoadingId() === approval.id"
+                    data-testid="submit-reject-reservation-button"
+                  >
+                    Submit rejection
+                  </button>
+
+                  <button
+                    type="button"
+                    (click)="cancelRejectReservation()"
+                    data-testid="cancel-reject-reservation-button"
+                  >
+                    Cancel rejection
+                  </button>
+                </div>
+              }
             </li>
           }
         </ul>
       </section>
     }
 
-    @if (dashboard.pendingEquipmentReports) {
+    @if (dashboard().pendingEquipmentReports) {
       <section>
         <h3>Pending Equipment Reports</h3>
 
+        @if (dashboard().pendingEquipmentReports.length === 0) {
+          <p>No pending equipment reports.</p>
+        }
+
         <ul>
-          @for (report of dashboard.pendingEquipmentReports; track report.id) {
+          @for (report of dashboard().pendingEquipmentReports; track report.id) {
             <li data-testid="pending-equipment-report">
-              {{ report.equipment_name }} — {{ report.reason }}
+              <strong>{{ report.equipment_name }}</strong>
+              —
+              {{ report.reason }}
+              —
+              reported by {{ report.reported_by_email }}
+
+              <div>
+                <button
+                  type="button"
+                  (click)="confirmReport(report.id)"
+                  [disabled]="actionLoadingId() === report.id"
+                  data-testid="confirm-report-button"
+                >
+                  Confirm report
+                </button>
+
+                <button
+                  type="button"
+                  (click)="dismissReport(report.id)"
+                  [disabled]="actionLoadingId() === report.id"
+                  data-testid="dismiss-report-button"
+                >
+                  Dismiss report
+                </button>
+              </div>
             </li>
           }
         </ul>

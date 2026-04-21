@@ -60,12 +60,12 @@
     </section>
 
     @if (equipment().status === 'available') {
-      <button
-        type="button"
-        data-testid="reserve-equipment-button"
+      <a
+        [routerLink]="['/equipment', equipment().id, 'reserve']"
+        data-testid="reserve-equipment-link"
       >
         Reserve this equipment
-      </button>
+      </a>
     }
   </section>
 }
