@@ -4,6 +4,12 @@
   Logout
 </button>
 
+<nav>
+  <a routerLink="/equipment" data-testid="nav-equipment">
+    Equipment
+  </a>
+</nav>
+
 @if (errorMessage) {
   <p data-testid="dashboard-error">
     {{ errorMessage }}

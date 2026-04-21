@@ -29,7 +29,9 @@ export class ApiService {
   }
 
   getEquipment() {
-    return this.http.get<any[]>(`${this.baseUrl}/equipment`, this.getHeaders());
+    const url = `${this.baseUrl}/equipment`;
+
+    return this.http.get<any[]>(url, this.getHeaders());
   }
 
   getEquipmentById(id: number | string) {

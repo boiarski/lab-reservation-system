@@ -1,0 +1,46 @@
+<h1>Equipment</h1>
+
+<a routerLink="/dashboard" data-testid="back-dashboard-link">
+  Back to dashboard
+</a>
+
+@if (isLoading()) {
+  <p data-testid="equipment-loading">Loading equipment...</p>
+}
+
+@if (errorMessage()) {
+  <p data-testid="equipment-error">
+    {{ errorMessage() }}
+  </p>
+}
+
+@if (!isLoading() && equipment().length === 0) {
+  <p data-testid="equipment-empty">
+    No equipment found.
+  </p>
+}
+
+<ul data-testid="equipment-list">
+  @for (item of equipment(); track item.id) {
+    <li data-testid="equipment-item">
+      <strong>{{ item.name }}</strong>
+
+      <p>{{ item.description }}</p>
+
+      <p>
+        Status:
+        <span data-testid="equipment-status">
+          {{ item.status }}
+        </span>
+      </p>
+
+      <button
+        type="button"
+        (click)="openEquipment(item)"
+        data-testid="equipment-details-button"
+      >
+        View details
+      </button>
+    </li>
+  }
+</ul>
