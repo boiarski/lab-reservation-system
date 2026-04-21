@@ -1,0 +1,71 @@
+<a routerLink="/equipment" data-testid="back-equipment-link">
+  Back to equipment
+</a>
+
+@if (isLoading()) {
+  <p data-testid="equipment-detail-loading">
+    Loading equipment details...
+  </p>
+}
+
+@if (errorMessage()) {
+  <p data-testid="equipment-detail-error">
+    {{ errorMessage() }}
+  </p>
+}
+
+@if (equipment()) {
+  <section data-testid="equipment-detail">
+    <h1>{{ equipment().name }}</h1>
+
+    <p data-testid="equipment-description">
+      {{ equipment().description }}
+    </p>
+
+    <p>
+      Status:
+      <strong data-testid="equipment-status">
+        {{ equipment().status }}
+      </strong>
+    </p>
+
+    @if (equipment().status === 'out_of_order') {
+      <p data-testid="equipment-out-of-order-warning">
+        This equipment is currently out of order and cannot be reserved.
+      </p>
+    }
+
+    <hr />
+
+    <section>
+      <h2>Availability</h2>
+
+      @if (reservations().length === 0) {
+        <p data-testid="availability-empty">
+          No blocked dates found for this equipment.
+        </p>
+      }
+
+      @if (reservations().length > 0) {
+        <ul data-testid="availability-list">
+          @for (reservation of reservations(); track reservation.id) {
+            <li data-testid="availability-item">
+              {{ reservation.start_date }} to {{ reservation.end_date }}
+              —
+              {{ reservation.status }}
+            </li>
+          }
+        </ul>
+      }
+    </section>
+
+    @if (equipment().status === 'available') {
+      <button
+        type="button"
+        data-testid="reserve-equipment-button"
+      >
+        Reserve this equipment
+      </button>
+    }
+  </section>
+}
