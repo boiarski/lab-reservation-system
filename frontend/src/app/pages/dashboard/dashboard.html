@@ -1,0 +1,84 @@
+<h1>Dashboard</h1>
+
+<button (click)="logout()" data-testid="logout-button">
+  Logout
+</button>
+
+@if (errorMessage) {
+  <p data-testid="dashboard-error">
+    {{ errorMessage }}
+  </p>
+}
+
+@if (dashboard) {
+  <div data-testid="dashboard-content">
+    <h2>Welcome, {{ dashboard.user.email }}</h2>
+    <p>Role: {{ dashboard.user.role }}</p>
+
+    <section>
+      <h3>Warnings</h3>
+
+      @if (dashboard.warnings.length === 0) {
+        <p>No warnings.</p>
+      }
+
+      <ul>
+        @for (warning of dashboard.warnings; track $index) {
+          <li data-testid="dashboard-warning">
+            {{ warning.message }}
+          </li>
+        }
+      </ul>
+    </section>
+
+    <section>
+      <h3>My Reservations</h3>
+
+      @if (dashboard.myReservations.length === 0) {
+        <p>No reservations found.</p>
+      }
+
+      <ul>
+        @for (reservation of dashboard.myReservations; track reservation.id) {
+          <li data-testid="dashboard-reservation">
+            {{ reservation.equipment_name }}
+            —
+            {{ reservation.start_date }}
+            to
+            {{ reservation.end_date }}
+            —
+            {{ reservation.status }}
+          </li>
+        }
+      </ul>
+    </section>
+
+    @if (dashboard.pendingApprovals) {
+      <section>
+        <h3>Pending Approvals</h3>
+
+        <ul>
+          @for (approval of dashboard.pendingApprovals; track approval.id) {
+            <li data-testid="pending-approval">
+              {{ approval.equipment_name }} requested by {{ approval.user_email }}
+            </li>
+          }
+        </ul>
+      </section>
+    }
+
+    @if (dashboard.pendingEquipmentReports) {
+      <section>
+        <h3>Pending Equipment Reports</h3>
+
+        <ul>
+          @for (report of dashboard.pendingEquipmentReports; track report.id) {
+            <li data-testid="pending-equipment-report">
+              {{ report.equipment_name }} — {{ report.reason }}
+            </li>
+          }
+        </ul>
+      </section>
+    }
+  </div>
+}

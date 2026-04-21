@@ -1,10 +1,9 @@
 import { Routes } from '@angular/router';
-import { EquipmentListComponent } from './components/equipment-list/equipment-list';
-import { ReservationFormComponent } from './components/reservation-form/reservation-form';
-import { ReservationsListComponent } from './components/reservations-list/reservations-list';
+import { LoginComponent } from './pages/login/login';
+import { DashboardComponent } from './pages/dashboard/dashboard';
 
 export const routes: Routes = [
-  { path: '', component: EquipmentListComponent },
-  { path: 'reserve/:id', component: ReservationFormComponent },
-  { path: 'reservations', component: ReservationsListComponent }
+  { path: 'login', component: LoginComponent },
+  { path: 'dashboard', component: DashboardComponent },
+  { path: '', redirectTo: 'login', pathMatch: 'full' }
 ];

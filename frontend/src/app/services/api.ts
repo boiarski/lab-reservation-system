@@ -1,27 +1,77 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { environment } from '../../environments/environment';
+import { AuthService } from './auth';
 
 @Injectable({
-  providedIn: 'root',
+  providedIn: 'root'
 })
 export class ApiService {
-
   private baseUrl = environment.apiUrl;
 
-  constructor(private http: HttpClient) {
-    console.log('API URL:', this.baseUrl);
+  constructor(
+    private http: HttpClient,
+    private auth: AuthService
+  ) {}
+
+  private getHeaders() {
+    const token = this.auth.getToken();
+
+    return {
+      headers: new HttpHeaders({
+        Authorization: `Bearer ${token}`
+      })
+    };
+  }
+
+  getDashboard() {
+    return this.http.get<any>(`${this.baseUrl}/dashboard`, this.getHeaders());
   }
 
   getEquipment() {
-    return this.http.get<any[]>(`${this.baseUrl}/equipment`);
+    return this.http.get<any[]>(`${this.baseUrl}/equipment`, this.getHeaders());
   }
 
-  getReservations() {
-    return this.http.get<any[]>(`${this.baseUrl}/reservations`);
+  getEquipmentById(id: number | string) {
+    return this.http.get<any>(`${this.baseUrl}/equipment/${id}`, this.getHeaders());
   }
 
-  createReservations(data: any) {
-    return this.http.post(`${this.baseUrl}/reservations`, data);
+  getEquipmentAvailability(id: number | string) {
+    return this.http.get<any>(
+      `${this.baseUrl}/equipment/${id}/availability`,
+      this.getHeaders()
+    );
+  }
+
+  createReservation(data: any) {
+    return this.http.post<any>(
+      `${this.baseUrl}/reservations`,
+      data,
+      this.getHeaders()
+    );
+  }
+
+  cancelReservation(id: number | string) {
+    return this.http.patch<any>(
+      `${this.baseUrl}/reservations/${id}/cancel`,
+      {},
+      this.getHeaders()
+    );
+  }
+
+  completeReservation(id: number | string) {
+    return this.http.patch<any>(
+      `${this.baseUrl}/reservations/${id}/complete`,
+      {},
+      this.getHeaders()
+    );
+  }
+
+  changePassword(data: any) {
+    return this.http.patch<any>(
+      `${this.baseUrl}/users/me/password`,
+      data,
+      this.getHeaders()
+    );
   }
 }
