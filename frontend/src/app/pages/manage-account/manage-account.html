@@ -1,0 +1,111 @@
+<a routerLink="/dashboard" data-testid="back-dashboard-link">
+  Back to dashboard
+</a>
+
+<h1>Manage Account</h1>
+
+@if (notification()) {
+  <div
+    class="notification"
+    [class.notification-success]="notification()?.type === 'success'"
+    [class.notification-error]="notification()?.type === 'error'"
+    data-testid="manage-account-notification"
+  >
+    <p>{{ notification()?.message }}</p>
+
+    <button
+      type="button"
+      (click)="closeNotification()"
+      data-testid="close-manage-account-notification-button"
+    >
+      Close
+    </button>
+  </div>
+}
+
+<section data-testid="change-password-section">
+  <h2>Change Password</h2>
+
+  <form (ngSubmit)="submitPasswordChange()" data-testid="change-password-form">
+    <div>
+      <label>Current Password</label>
+      <input
+        type="password"
+        name="currentPassword"
+        [(ngModel)]="currentPassword"
+        data-testid="current-password-input"
+      />
+    </div>
+
+    <div>
+      <label>New Password</label>
+      <input
+        type="password"
+        name="newPassword"
+        [(ngModel)]="newPassword"
+        data-testid="new-password-input"
+      />
+    </div>
+
+    <button
+      type="submit"
+      [disabled]="isSubmittingPassword()"
+      data-testid="change-password-submit"
+    >
+      @if (isSubmittingPassword()) {
+        Saving...
+      } @else {
+        Change Password
+      }
+    </button>
+  </form>
+</section>
+
+<hr />
+
+<section data-testid="deactivate-account-section">
+  <h2>Deactivate Account</h2>
+
+  <p>
+    Deactivating your account will prevent you from logging in again.
+  </p>
+
+  @if (!showDeactivateConfirm()) {
+    <button
+      type="button"
+      (click)="openDeactivateConfirm()"
+      data-testid="open-deactivate-account-confirm-button"
+    >
+      Deactivate my account
+    </button>
+  }
+
+  @if (showDeactivateConfirm()) {
+    <div data-testid="deactivate-account-confirmation">
+      <p>
+        Are you sure you want to deactivate your account?
+      </p>
+
+      <button
+        type="button"
+        (click)="deactivateAccount()"
+        [disabled]="isDeactivatingAccount()"
+        data-testid="confirm-deactivate-account-button"
+      >
+        @if (isDeactivatingAccount()) {
+          Deactivating...
+        } @else {
+          Yes, deactivate my account
+        }
+      </button>
+
+      <button
+        type="button"
+        (click)="cancelDeactivateConfirm()"
+        data-testid="cancel-deactivate-account-button"
+      >
+        Cancel
+      </button>
+    </div>
+  }
+</section>

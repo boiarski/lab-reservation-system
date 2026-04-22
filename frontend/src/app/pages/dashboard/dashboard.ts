@@ -225,6 +225,10 @@ export class DashboardComponent implements OnInit {
       return false;
     }
 
+    if (reservation.equipment_status === 'out_of_order') {
+      return false;
+    }
+
     const today = new Date();
     const startDate = new Date(reservation.start_date);
 

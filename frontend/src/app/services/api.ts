@@ -45,6 +45,38 @@ export class ApiService {
     );
   }
 
+  createEquipment(data: any) {
+    return this.http.post<any>(
+      `${this.baseUrl}/equipment`,
+      data,
+      this.getHeaders()
+    );
+  }
+
+  decommissionEquipment(id: number | string) {
+    return this.http.patch<any>(
+      `${this.baseUrl}/equipment/${id}/decommission`,
+      {},
+      this.getHeaders()
+    );
+  }
+
+  updateEquipmentStatus(id: number | string, data: any) {
+    return this.http.patch<any>(
+      `${this.baseUrl}/equipment/${id}/status`,
+      data,
+      this.getHeaders()
+    );
+  }
+
+  reportEquipmentIssue(id: number | string, data: any) {
+    return this.http.post<any>(
+      `${this.baseUrl}/equipment/${id}/report-issue`,
+      data,
+      this.getHeaders()
+    );
+  }
+
   confirmEquipmentReport(id: number | string) {
     return this.http.patch<any>(
       `${this.baseUrl}/equipment/reports/${id}/confirm`,
@@ -101,10 +133,48 @@ export class ApiService {
     );
   }
 
+  createUser(data: any) {
+    return this.http.post<any>(
+      `${this.baseUrl}/users`,
+      data,
+      this.getHeaders()
+    );
+  }
+
+  getUsers() {
+    return this.http.get<any[]>(
+      `${this.baseUrl}/users`,
+      this.getHeaders()
+    );
+  }
+
+  updateUserRole(id: number | string, data: any) {
+    return this.http.patch<any>(
+      `${this.baseUrl}/users/${id}/role`,
+      data,
+      this.getHeaders()
+    );
+  }
+
+  updateUserStatus(id: number | string, data: any) {
+    return this.http.patch<any>(
+      `${this.baseUrl}/users/${id}/status`,
+      data,
+      this.getHeaders()
+    );
+  }
+
   changePassword(data: any) {
     return this.http.patch<any>(
       `${this.baseUrl}/users/me/password`,
       data,
+      this.getHeaders()
+    );
+  }
+
+  deactivateOwnAccount() {
+    return this.http.delete<any>(
+      `${this.baseUrl}/users/me`,
       this.getHeaders()
     );
   }

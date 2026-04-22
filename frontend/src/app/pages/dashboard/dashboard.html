@@ -5,8 +5,16 @@
 </button>
 
 <nav>
+  @if (dashboard()?.user.role === 'admin' || dashboard()?.user.role === 'helper') {
+    <a routerLink="/admin" data-testid="nav-admin">
+      Management
+    </a>
+  }
   <a routerLink="/equipment" data-testid="nav-equipment">
     Equipment
+  </a>
+  <a routerLink="/manage-account" data-testid="nav-manage-account">
+    Manage Account
   </a>
 </nav>
 

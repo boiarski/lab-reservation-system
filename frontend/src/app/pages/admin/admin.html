@@ -1,0 +1,236 @@
+<a routerLink="/dashboard" data-testid="back-dashboard-link">
+  Back to dashboard
+</a>
+
+<h1>Management</h1>
+
+@if (notification()) {
+  <div
+    class="notification"
+    [class.notification-success]="notification()?.type === 'success'"
+    [class.notification-error]="notification()?.type === 'error'"
+    data-testid="admin-notification"
+  >
+    <p>{{ notification()?.message }}</p>
+
+    <button
+      type="button"
+      (click)="closeNotification()"
+      data-testid="close-admin-notification-button"
+    >
+      Close
+    </button>
+  </div>
+}
+
+@if (currentUser()) {
+  <p data-testid="admin-current-role">
+    Current role: {{ currentUser().role }}
+  </p>
+}
+
+@if (isAdmin()) {
+  <section data-testid="create-user-section">
+    <h2>Create User</h2>
+
+    <form (ngSubmit)="createUser()" data-testid="create-user-form">
+      <div>
+        <label>Name</label>
+        <input
+          name="newUserName"
+          [(ngModel)]="newUserName"
+          data-testid="new-user-name"
+        />
+      </div>
+
+      <div>
+        <label>Email</label>
+        <input
+          type="email"
+          name="newUserEmail"
+          [(ngModel)]="newUserEmail"
+          data-testid="new-user-email"
+        />
+      </div>
+
+      <div>
+        <label>Temporary Password</label>
+        <input
+          type="password"
+          name="newUserPassword"
+          [(ngModel)]="newUserPassword"
+          data-testid="new-user-password"
+        />
+      </div>
+
+      <div>
+        <label>Role</label>
+        <select
+          name="newUserRole"
+          [(ngModel)]="newUserRole"
+          data-testid="new-user-role"
+        >
+          <option value="user">User</option>
+          <option value="helper">Helper</option>
+          <option value="admin">Admin</option>
+        </select>
+      </div>
+
+      <button type="submit" data-testid="create-user-submit">
+        Create User
+      </button>
+    </form>
+  </section>
+
+  <hr />
+
+  <section data-testid="user-management-section">
+    <h2>User Management</h2>
+
+    @if (users().length === 0) {
+      <p data-testid="users-empty">
+        No users found.
+      </p>
+    }
+
+    <ul data-testid="users-list">
+      @for (user of users(); track user.id) {
+        <li data-testid="user-management-item">
+          <strong>{{ user.name }}</strong>
+          —
+          {{ user.email }}
+          —
+          Role: {{ user.role }}
+          —
+          Active: {{ user.active }}
+
+          <div>
+            <label>Role</label>
+
+            <select
+              [ngModel]="user.role"
+              (ngModelChange)="updateUserRole(user, $event)"
+              [disabled]="actionLoadingId() === 'user-role-' + user.id"
+              data-testid="update-user-role-select"
+            >
+              <option value="user">User</option>
+              <option value="helper">Helper</option>
+              <option value="admin">Admin</option>
+            </select>
+          </div>
+
+          <div>
+            @if (user.active) {
+              <button
+                type="button"
+                (click)="updateUserStatus(user, false)"
+                [disabled]="actionLoadingId() === 'user-status-' + user.id"
+                data-testid="deactivate-user-button"
+              >
+                Deactivate
+              </button>
+            } @else {
+              <button
+                type="button"
+                (click)="updateUserStatus(user, true)"
+                [disabled]="actionLoadingId() === 'user-status-' + user.id"
+                data-testid="activate-user-button"
+              >
+                Reactivate
+              </button>
+            }
+          </div>
+        </li>
+      }
+    </ul>
+  </section>
+
+  <hr />
+
+  <section data-testid="create-equipment-section">
+    <h2>Create Equipment</h2>
+
+    <form (ngSubmit)="createEquipment()" data-testid="create-equipment-form">
+      <div>
+        <label>Name</label>
+        <input
+          name="newEquipmentName"
+          [(ngModel)]="newEquipmentName"
+          data-testid="new-equipment-name"
+        />
+      </div>
+
+      <div>
+        <label>Description</label>
+        <textarea
+          name="newEquipmentDescription"
+          [(ngModel)]="newEquipmentDescription"
+          data-testid="new-equipment-description"
+        ></textarea>
+      </div>
+
+      <button type="submit" data-testid="create-equipment-submit">
+        Create Equipment
+      </button>
+    </form>
+  </section>
+
+  <hr />
+}
+
+@if (isHelperOrAdmin()) {
+  <section data-testid="equipment-management-section">
+    <h2>Equipment Status</h2>
+
+    @if (isLoading()) {
+      <p data-testid="admin-equipment-loading">
+        Loading equipment...
+      </p>
+    }
+
+    <ul data-testid="admin-equipment-list">
+      @for (item of equipment(); track item.id) {
+        <li data-testid="admin-equipment-item">
+          <strong>{{ item.name }}</strong>
+          —
+          {{ item.status }}
+
+          <button
+            type="button"
+            (click)="updateStatus(item, 'available')"
+            [disabled]="actionLoadingId() === item.id || item.status === 'available' || item.status === 'decommissioned'"
+            data-testid="mark-equipment-available-button"
+          >
+            Mark available
+          </button>
+
+          <button
+            type="button"
+            (click)="updateStatus(item, 'out_of_order')"
+            [disabled]="actionLoadingId() === item.id || item.status === 'out_of_order' || item.status === 'decommissioned'"
+            data-testid="mark-equipment-out-of-order-button"
+          >
+            Mark out of order
+          </button>
+
+          @if (isAdmin()) {
+            <button
+              type="button"
+              (click)="decommissionEquipment(item)"
+              [disabled]="actionLoadingId() === 'equipment-decommission-' + item.id || item.status === 'decommissioned'"
+              data-testid="decommission-equipment-button"
+            >
+              Decommission
+            </button>
+          }
+        </li>
+      }
+    </ul>
+  </section>
+}
+
+@if (currentUser() && !isHelperOrAdmin()) {
+  <p data-testid="admin-access-denied">
+    You do not have access to this page.
+  </p>
+}

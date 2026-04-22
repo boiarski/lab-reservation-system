@@ -2,15 +2,28 @@
   Back to equipment
 </a>
 
+@if (notification()) {
+  <div
+    class="notification"
+    [class.notification-success]="notification()?.type === 'success'"
+    [class.notification-error]="notification()?.type === 'error'"
+    data-testid="equipment-detail-notification"
+  >
+    <p>{{ notification()?.message }}</p>
+
+    <button
+      type="button"
+      (click)="closeNotification()"
+      data-testid="close-equipment-detail-notification-button"
+    >
+      Close
+    </button>
+  </div>
+}
+
 @if (isLoading()) {
   <p data-testid="equipment-detail-loading">
     Loading equipment details...
-  </p>
-}
-
-@if (errorMessage()) {
-  <p data-testid="equipment-detail-error">
-    {{ errorMessage() }}
   </p>
 }
 
@@ -67,5 +80,48 @@
         Reserve this equipment
       </a>
     }
+
+    <hr />
+
+    <section data-testid="report-issue-section">
+      <h2>Report equipment issue</h2>
+
+      @if (equipment().status === 'out_of_order') {
+        <p data-testid="equipment-already-out-of-order">
+          This equipment is already marked as out of order.
+        </p>
+      }
+
+      @if (equipment().status === 'decommissioned') {
+        <p data-testid="equipment-decommissioned-report-blocked">
+          This equipment has been decommissioned and cannot be reported.
+        </p>
+      }
+
+      @if (equipment().status === 'available') {
+        <form (ngSubmit)="reportIssue()" data-testid="report-issue-form">
+          <label>Reason</label>
+
+          <textarea
+            name="issueReason"
+            [(ngModel)]="issueReason"
+            data-testid="report-issue-reason"
+            placeholder="Describe the issue"
+          ></textarea>
+
+          <button
+            type="submit"
+            [disabled]="isReportingIssue()"
+            data-testid="report-issue-submit"
+          >
+            @if (isReportingIssue()) {
+              Reporting...
+            } @else {
+              Report issue
+            }
+          </button>
+        </form>
+      }
+    </section>
   </section>
 }
