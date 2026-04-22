@@ -20,7 +20,7 @@ router.put('/:id', roleMiddleware(['admin']), equipmentController.updateEquipmen
 
 router.patch('/:id/status', roleMiddleware(['helper', 'admin']), equipmentController.updateEquipmentStatus);
 
-router.delete('/:id', roleMiddleware(['admin']), equipmentController.deleteEquipment);
+router.patch('/:id/decommission', roleMiddleware(['admin']), equipmentController.decommissionEquipment);
 
 router.post('/:id/report-issue', equipmentController.reportIssue);
 

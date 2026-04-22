@@ -50,6 +50,10 @@ async function createReservation({ userId, equipmentId, startDate, endDate, just
         throw new Error('Equipment is out of order');
     }
 
+    if (equipment.status === 'decommissioned') {
+        throw new Error('Equipment is decommissioned');
+    }
+
     const conflictResult = await pool.query(
         `SELECT id FROM reservations WHERE equipment_id = $1 AND status IN ('approved', 'pending_approval') AND NOT ($3 < start_date OR $2 > end_date)`,
         [equipmentId, startDate, endDate]
@@ -115,7 +119,13 @@ async function cancelReservation({ userId, reservationId }) {
 
 async function completeReservation({ userId, reservationId }) {
     const result = await pool.query(
-        `SELECT * FROM reservations WHERE id = $1 AND user_id = $2`,
+        `SELECT
+            r.*,
+            e.status AS equipment_status
+         FROM reservations r
+         JOIN equipment e ON e.id = r.equipment_id
+         WHERE r.id = $1
+           AND r.user_id = $2`,
         [reservationId, userId]
     );
 
@@ -139,8 +149,23 @@ async function completeReservation({ userId, reservationId }) {
         throw new Error('Reservation cannot be completed before it starts');
     }
 
+    if (reservation.equipment_status === 'out_of_order') {
+        await pool.query(
+            `UPDATE reservations
+             SET status = 'disrupted'
+             WHERE id = $1`,
+            [reservationId]
+        );
+
+        throw new Error('Reservation dropped due to outage');
+    }
+
     const updateResult = await pool.query(
-        `UPDATE reservations SET status = 'completed', completed_at = NOW() WHERE id = $1 RETURNING *`,
+        `UPDATE reservations
+         SET status = 'completed',
+             completed_at = NOW()
+         WHERE id = $1
+         RETURNING *`,
         [reservationId]
     );
 

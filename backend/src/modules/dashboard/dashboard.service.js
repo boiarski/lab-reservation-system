@@ -17,9 +17,43 @@ function isSameDate(dateA, dateB) {
     return normalizeDate(dateA).getTime() === normalizeDate(dateB).getTime();
 }
 
+async function disruptStartedReservationsForOutOfOrderEquipment(userId) {
+    await pool.query(
+        `UPDATE reservations r
+         SET status = 'disrupted'
+         FROM equipment e
+         WHERE e.id = r.equipment_id
+           AND r.user_id = $1
+           AND r.status = 'approved'
+           AND r.start_date <= CURRENT_DATE
+           AND r.end_date >= CURRENT_DATE
+           AND e.status = 'out_of_order'`,
+        [userId]
+    );
+}
+
 async function getUserReservations(userId) {
     const result = await pool.query(
-        `SELECT r.id, r.user_id, r.equipment_id, e.name AS equipment_name, r.start_date, r.end_date, r.status, r.justification, r.completed_at, r.cancelled_at, r.rejection_reason, r.suggested_start_date, r.suggested_end_date, r.created_at FROM reservations r JOIN equipment e ON e.id = r.equipment_id         WHERE r.user_id = $1 ORDER BY r.start_date ASC`,
+        `SELECT
+            r.id,
+            r.user_id,
+            r.equipment_id,
+            e.name AS equipment_name,
+            e.status AS equipment_status,
+            r.start_date,
+            r.end_date,
+            r.status,
+            r.justification,
+            r.completed_at,
+            r.cancelled_at,
+            r.rejection_reason,
+            r.suggested_start_date,
+            r.suggested_end_date,
+            r.created_at
+         FROM reservations r
+         JOIN equipment e ON e.id = r.equipment_id
+         WHERE r.user_id = $1
+         ORDER BY r.start_date ASC`,
         [userId]
     );
 
@@ -28,7 +62,23 @@ async function getUserReservations(userId) {
 
 async function getPendingApprovals() {
     const result = await pool.query(
-        `SELECT r.id, r.user_id, u.name AS user_name, u.email AS user_email, r.equipment_id, e.name AS equipment_name, r.start_date, r.end_date, r.status, r.justification, r.created_at FROM reservations r JOIN users u ON u.id = r.user_id JOIN equipment e ON e.id = r.equipment_id WHERE r.status = 'pending_approval' ORDER BY r.created_at ASC`
+        `SELECT
+            r.id,
+            r.user_id,
+            u.name AS user_name,
+            u.email AS user_email,
+            r.equipment_id,
+            e.name AS equipment_name,
+            r.start_date,
+            r.end_date,
+            r.status,
+            r.justification,
+            r.created_at
+         FROM reservations r
+         JOIN users u ON u.id = r.user_id
+         JOIN equipment e ON e.id = r.equipment_id
+         WHERE r.status = 'pending_approval'
+         ORDER BY r.created_at ASC`
     );
 
     return result.rows;
@@ -36,7 +86,21 @@ async function getPendingApprovals() {
 
 async function getPendingEquipmentReports() {
     const result = await pool.query(
-        `SELECT er.id, er.equipment_id, e.name AS equipment_name, er.reported_by, u.name AS reported_by_name, u.email AS reported_by_email, er.reason, er.status, er.created_at FROM equipment_reports er JOIN equipment e ON e.id = er.equipment_id JOIN users u ON u.id = er.reported_by WHERE er.status = 'pending' ORDER BY er.created_at ASC`
+        `SELECT
+            er.id,
+            er.equipment_id,
+            e.name AS equipment_name,
+            er.reported_by,
+            u.name AS reported_by_name,
+            u.email AS reported_by_email,
+            er.reason,
+            er.status,
+            er.created_at
+         FROM equipment_reports er
+         JOIN equipment e ON e.id = er.equipment_id
+         JOIN users u ON u.id = er.reported_by
+         WHERE er.status = 'pending'
+         ORDER BY er.created_at ASC`
     );
 
     return result.rows;
@@ -57,6 +121,7 @@ function buildUserWarnings(reservations) {
     const warnings = [];
     const today = normalizeDate(new Date());
     const tomorrow = addDays(today, 1);
+    const outageWarningLimit = addDays(today, 14);
 
     for (const reservation of reservations) {
         const startDate = normalizeDate(reservation.start_date);
@@ -86,6 +151,41 @@ function buildUserWarnings(reservations) {
             warnings.push(warning);
         }
 
+        if (reservation.status === 'disrupted') {
+            warnings.push({
+                type: 'reservation_disrupted',
+                message: `Reservation dropped due to outage: ${reservation.equipment_name}.`,
+                reservationId: reservation.id,
+                equipmentId: reservation.equipment_id
+            });
+        }
+
+        if (
+            reservation.status === 'disrupted' &&
+            reservation.equipment_status === 'available'
+        ) {
+            warnings.push({
+                type: 'disrupted_equipment_available_again',
+                message: `${reservation.equipment_name} is available again. You can create a new reservation.`,
+                reservationId: reservation.id,
+                equipmentId: reservation.equipment_id
+            });
+        }
+
+        if (
+            reservation.status === 'approved' &&
+            reservation.equipment_status === 'out_of_order' &&
+            startDate >= today &&
+            startDate <= outageWarningLimit
+        ) {
+            warnings.push({
+                type: 'upcoming_reservation_equipment_outage',
+                message: `${reservation.equipment_name} is currently out of order and may affect your upcoming reservation.`,
+                reservationId: reservation.id,
+                equipmentId: reservation.equipment_id
+            });
+        }
+
         if (reservation.status === 'approved' && isSameDate(startDate, tomorrow)) {
             warnings.push({
                 type: 'starts_tomorrow',
@@ -111,7 +211,21 @@ async function buildEarlyAvailabilityWarnings(userId) {
     const tomorrow = addDays(today, 1);
 
     const result = await pool.query(
-        `SELECT next_r.id AS reservation_id, next_r.equipment_id, e.name AS equipment_name FROM reservations completed_r JOIN reservations next_r ON next_r.equipment_id = completed_r.equipment_id JOIN equipment e ON e.id = next_r.equipment_id WHERE completed_r.status = 'completed' AND completed_r.completed_at IS NOT NULL AND DATE(completed_r.completed_at) = $1 AND next_r.user_id = $2 AND next_r.status = 'approved' AND next_r.start_date = $3`,
+        `SELECT
+            next_r.id AS reservation_id,
+            next_r.equipment_id,
+            e.name AS equipment_name
+         FROM reservations completed_r
+         JOIN reservations next_r
+           ON next_r.equipment_id = completed_r.equipment_id
+         JOIN equipment e
+           ON e.id = next_r.equipment_id
+         WHERE completed_r.status = 'completed'
+           AND completed_r.completed_at IS NOT NULL
+           AND DATE(completed_r.completed_at) = $1
+           AND next_r.user_id = $2
+           AND next_r.status = 'approved'
+           AND next_r.start_date = $3`,
         [today, userId, tomorrow]
     );
 
@@ -152,6 +266,8 @@ function buildPrivilegedWarnings({ pendingApprovals, pendingEquipmentReports, ou
 }
 
 async function getDashboardData(user) {
+    await disruptStartedReservationsForOutOfOrderEquipment(user.id);
+
     const myReservations = await getUserReservations(user.id);
 
     let warnings = buildUserWarnings(myReservations);

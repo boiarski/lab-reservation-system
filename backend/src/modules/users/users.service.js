@@ -54,10 +54,17 @@ async function updateUserRole({ userId, role }) {
     return result.rows[0];
 }
 
-async function deleteUser(userId) {
+async function updateUserActiveStatus({ userId, active }) {
+    if (typeof active !== 'boolean') {
+        throw new Error('Active must be a boolean');
+    }
+
     const result = await pool.query(
-        `UPDATE users SET active = false WHERE id = $1 RETURNING id, name, email, role, active, created_at`,
-        [userId]
+        `UPDATE users
+         SET active = $1
+         WHERE id = $2
+         RETURNING id, name, email, role, active, created_at`,
+        [active, userId]
     );
 
     if (result.rows.length === 0) {
@@ -141,7 +148,7 @@ module.exports = {
     deleteOwnAccount,
     getAllUsers,
     updateUserRole,
-    deleteUser,
+    updateUserActiveStatus,
     createUser,
     changeOwnPassword
 };

@@ -18,6 +18,6 @@ router.post('/', roleMiddleware(['admin']), usersController.createUser);
 
 router.patch('/:id/role', roleMiddleware(['admin']), usersController.updateUserRole);
 
-router.delete('/:id', roleMiddleware(['admin']), usersController.deleteUser);
+router.patch('/:id/status', roleMiddleware(['admin']), usersController.updateUserActiveStatus);
 
 module.exports = router;

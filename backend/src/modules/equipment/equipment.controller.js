@@ -21,6 +21,8 @@ async function reportIssue(req, res) {
         const knownErrors = [
             'Report reason is required',
             'Equipment not found',
+            'Equipment is already out of order',
+            'Equipment is decommissioned',
             'There is already a pending issue report for this equipment'
         ];
 
@@ -265,25 +267,25 @@ async function updateEquipmentStatus(req, res) {
     }
 }
 
-async function deleteEquipment(req, res) {
+async function decommissionEquipment(req, res) {
     const { id } = req.params;
 
     try {
-        const equipment = await equipmentService.deleteEquipment(id);
+        const equipment = await equipmentService.decommissionEquipment(id);
 
         return res.status(200).json({
-            message: 'Equipment deleted successfully',
+            message: 'Equipment decommissioned successfully',
             equipment
         });
     } catch (error) {
-        console.error('Delete equipment error:', error);
+        console.error('Decommission equipment error:', error);
 
         if (error.message === 'Equipment not found') {
             return res.status(404).json({ message: error.message });
         }
 
         return res.status(500).json({
-            message: 'Error deleting equipment',
+            message: 'Error decommissioning equipment',
             debug: error.message
         });
     }
@@ -300,5 +302,5 @@ module.exports = {
     createEquipment,
     updateEquipment,
     updateEquipmentStatus,
-    deleteEquipment
+    decommissionEquipment
 };

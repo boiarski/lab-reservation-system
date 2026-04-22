@@ -35,6 +35,7 @@ async function createReservation(req, res) {
             'Start date cannot be after end date',
             'Equipment not found',
             'Equipment is out of order',
+            'Equipment is decommissioned',
             'Reservation conflicts with an existing reservation',
             'Justification is required for reservations longer than 7 days'
         ];
@@ -105,7 +106,8 @@ async function completeReservation(req, res) {
         const knownErrors = [
             'Reservation not found',
             'Only approved reservations can be completed',
-            'Reservation cannot be completed before it starts'
+            'Reservation cannot be completed before it starts',
+            'Reservation dropped due to outage'
         ];
 
         if (error.message === 'Reservation not found') {
@@ -117,7 +119,8 @@ async function completeReservation(req, res) {
         }
 
         return res.status(500).json({
-            message: 'Error completing reservation'
+            message: 'Error completing reservation',
+            debug: error.message
         });
     }
 }

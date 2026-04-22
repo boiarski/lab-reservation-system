@@ -6,7 +6,9 @@ async function reportIssue({ equipmentId, reportedBy, reason }) {
     }
 
     const equipmentResult = await pool.query(
-        `SELECT id, name, status FROM equipment WHERE id = $1`,
+        `SELECT id, name, status
+         FROM equipment
+         WHERE id = $1`,
         [equipmentId]
     );
 
@@ -14,8 +16,21 @@ async function reportIssue({ equipmentId, reportedBy, reason }) {
         throw new Error('Equipment not found');
     }
 
+    const equipment = equipmentResult.rows[0];
+
+    if (equipment.status === 'out_of_order') {
+        throw new Error('Equipment is already out of order');
+    }
+
+    if (equipment.status === 'decommissioned') {
+        throw new Error('Equipment is decommissioned');
+    }
+
     const existingPendingReport = await pool.query(
-        `SELECT id FROM equipment_reports WHERE equipment_id = $1 AND status = 'pending'`,
+        `SELECT id
+         FROM equipment_reports
+         WHERE equipment_id = $1
+           AND status = 'pending'`,
         [equipmentId]
     );
 
@@ -24,7 +39,14 @@ async function reportIssue({ equipmentId, reportedBy, reason }) {
     }
 
     const result = await pool.query(
-        `INSERT INTO equipment_reports (equipment_id, reported_by, reason, status) VALUES ($1, $2, $3, 'pending') RETURNING *`,
+        `INSERT INTO equipment_reports (
+            equipment_id,
+            reported_by,
+            reason,
+            status
+         )
+         VALUES ($1, $2, $3, 'pending')
+         RETURNING *`,
         [equipmentId, reportedBy, reason]
     );
 
@@ -33,7 +55,21 @@ async function reportIssue({ equipmentId, reportedBy, reason }) {
 
 async function getPendingReports() {
     const result = await pool.query(
-        `SELECT er.id, er.equipment_id, e.name AS equipment_name, er.reported_by, u.name AS reported_by_name, u.email AS reported_by_email, er.reason, er.status, er.created_at FROM equipment_reports er JOIN equipment e ON e.id = er.equipment_id JOIN users u ON u.id = er.reported_by WHERE er.status = 'pending' ORDER BY er.created_at ASC`
+        `SELECT
+            er.id,
+            er.equipment_id,
+            e.name AS equipment_name,
+            er.reported_by,
+            u.name AS reported_by_name,
+            u.email AS reported_by_email,
+            er.reason,
+            er.status,
+            er.created_at
+         FROM equipment_reports er
+         JOIN equipment e ON e.id = er.equipment_id
+         JOIN users u ON u.id = er.reported_by
+         WHERE er.status = 'pending'
+         ORDER BY er.created_at ASC`
     );
 
     return result.rows;
@@ -41,7 +77,9 @@ async function getPendingReports() {
 
 async function confirmReport({ reportId, reviewerId }) {
     const reportResult = await pool.query(
-        `SELECT * FROM equipment_reports WHERE id = $1`,
+        `SELECT *
+         FROM equipment_reports
+         WHERE id = $1`,
         [reportId]
     );
 
@@ -58,19 +96,36 @@ async function confirmReport({ reportId, reviewerId }) {
     await pool.query('BEGIN');
 
     try {
-        const updateReport = await pool.query(
-            `UPDATE equipment_reports SET status = 'confirmed', reviewed_by = $1, reviewed_at = NOW() WHERE id = $2 RETURNING *`,
+        const updatedReport = await pool.query(
+            `UPDATE equipment_reports
+             SET status = 'confirmed',
+                 reviewed_by = $1,
+                 reviewed_at = NOW()
+             WHERE id = $2
+             RETURNING *`,
             [reviewerId, reportId]
         );
 
         await pool.query(
-            `UPDATE equipment SET status = 'out_of_order' WHERE id = $1`,
-            [report.equipmentId]
+            `UPDATE equipment
+             SET status = 'out_of_order'
+             WHERE id = $1`,
+            [report.equipment_id]
+        );
+
+        await pool.query(
+            `UPDATE reservations
+             SET status = 'disrupted'
+             WHERE equipment_id = $1
+               AND status = 'approved'
+               AND start_date <= CURRENT_DATE
+               AND end_date >= CURRENT_DATE`,
+            [report.equipment_id]
         );
 
         await pool.query('COMMIT');
 
-        return updateReport.rows[0];
+        return updatedReport.rows[0];
     } catch (error) {
         await pool.query('ROLLBACK');
         throw error;
@@ -79,7 +134,9 @@ async function confirmReport({ reportId, reviewerId }) {
 
 async function dismissReport({ reportId, reviewerId }) {
     const reportResult = await pool.query(
-        `SELECT * FROM equipment_reports WHERE id = $1`,
+        `SELECT *
+         FROM equipment_reports
+         WHERE id = $1`,
         [reportId]
     );
 
@@ -94,7 +151,12 @@ async function dismissReport({ reportId, reviewerId }) {
     }
 
     const updatedReport = await pool.query(
-        `UPDATE equipment_reports SET status = 'dismissed', reviewed_by = $1, reviewed_at = NOW() WHERE id = $2 RETURNING *`,
+        `UPDATE equipment_reports
+         SET status = 'dismissed',
+             reviewed_by = $1,
+             reviewed_at = NOW()
+         WHERE id = $2
+         RETURNING *`,
         [reviewerId, reportId]
     );
 
@@ -103,7 +165,14 @@ async function dismissReport({ reportId, reviewerId }) {
 
 async function getAllEquipment() {
     const result = await pool.query(
-        `SELECT id, name, description, status, created_at FROM equipment ORDER BY id ASC`
+        `SELECT
+            id,
+            name,
+            description,
+            status,
+            created_at
+         FROM equipment
+         ORDER BY id ASC`
     );
 
     return result.rows;
@@ -111,7 +180,14 @@ async function getAllEquipment() {
 
 async function getEquipmentById(equipmentId) {
     const result = await pool.query(
-        `SELECT id, name, description, status, created_at FROM equipment WHERE id = $1`,
+        `SELECT
+            id,
+            name,
+            description,
+            status,
+            created_at
+         FROM equipment
+         WHERE id = $1`,
         [equipmentId]
     );
 
@@ -124,7 +200,14 @@ async function getEquipmentById(equipmentId) {
 
 async function getEquipmentAvailability(equipmentId) {
     const equipmentResult = await pool.query(
-        `SELECT id, name, description, status, created_at FROM equipment WHERE id = $1`,
+        `SELECT
+            id,
+            name,
+            description,
+            status,
+            created_at
+         FROM equipment
+         WHERE id = $1`,
         [equipmentId]
     );
 
@@ -133,7 +216,15 @@ async function getEquipmentAvailability(equipmentId) {
     }
 
     const reservationsResult = await pool.query(
-        `SELECT id, start_date, end_date, status FROM reservations WHERE equipment_id = $1 AND status IN ('approved', 'pending_approval') ORDER BY start_date ASC`,
+        `SELECT
+            id,
+            start_date,
+            end_date,
+            status
+         FROM reservations
+         WHERE equipment_id = $1
+           AND status IN ('approved', 'pending_approval')
+         ORDER BY start_date ASC`,
         [equipmentId]
     );
 
@@ -149,7 +240,9 @@ async function createEquipment({ name, description }) {
     }
 
     const result = await pool.query(
-        `INSERT INTO equipment (name, description, status) VALUES ($1, $2, 'available') RETURNING *`,
+        `INSERT INTO equipment (name, description, status)
+         VALUES ($1, $2, 'available')
+         RETURNING *`,
         [name, description || null]
     );
 
@@ -162,7 +255,11 @@ async function updateEquipment({ equipmentId, name, description }) {
     }
 
     const result = await pool.query(
-        `UPDATE equipment SET name = $1, description = $2 WHERE id = $3 RETURNING *`,
+        `UPDATE equipment
+         SET name = $1,
+             description = $2
+         WHERE id = $3
+         RETURNING *`,
         [name, description || null, equipmentId]
     );
 
@@ -174,35 +271,79 @@ async function updateEquipment({ equipmentId, name, description }) {
 }
 
 async function updateEquipmentStatus({ equipmentId, status }) {
-    const allowedStatuses = ['available', 'out_of_order'];
+    const allowedStatuses = ['available', 'out_of_order', 'decommissioned'];
 
     if (!allowedStatuses.includes(status)) {
         throw new Error('Invalid equipment status');
     }
 
-    const result = await pool.query(
-        `UPDATE equipment SET status = $1 WHERE id = $2 RETURNING *`,
-        [status, equipmentId]
-    );
+    await pool.query('BEGIN');
 
-    if (result.rows.length === 0) {
-        throw new Error('Equipment not found');
+    try {
+        const result = await pool.query(
+            `UPDATE equipment
+             SET status = $1
+             WHERE id = $2
+             RETURNING *`,
+            [status, equipmentId]
+        );
+
+        if (result.rows.length === 0) {
+            throw new Error('Equipment not found');
+        }
+
+        if (status === 'decommissioned') {
+            await pool.query(
+                `UPDATE reservations
+                 SET status = 'disrupted'
+                 WHERE equipment_id = $1
+                   AND status IN ('approved', 'pending_approval')
+                   AND end_date >= CURRENT_DATE`,
+                [equipmentId]
+            );
+        }
+
+        await pool.query('COMMIT');
+
+        return result.rows[0];
+    } catch (error) {
+        await pool.query('ROLLBACK');
+        throw error;
     }
-
-    return result.rows[0];
 }
 
-async function deleteEquipment(equipmentId) {
-    const result = await pool.query(
-        `DELETE FROM equipment WHERE id = $1 RETURNING *`,
-        [equipmentId]
-    );
+async function decommissionEquipment(equipmentId) {
+    await pool.query('BEGIN');
 
-    if (result.rows.length === 0) {
-        throw new Error('Equipment not found');
+    try {
+        const result = await pool.query(
+            `UPDATE equipment
+             SET status = 'decommissioned'
+             WHERE id = $1
+             RETURNING *`,
+            [equipmentId]
+        );
+
+        if (result.rows.length === 0) {
+            throw new Error('Equipment not found');
+        }
+
+        await pool.query(
+            `UPDATE reservations
+             SET status = 'disrupted'
+             WHERE equipment_id = $1
+               AND status IN ('approved', 'pending_approval')
+               AND end_date >= CURRENT_DATE`,
+            [equipmentId]
+        );
+
+        await pool.query('COMMIT');
+
+        return result.rows[0];
+    } catch (error) {
+        await pool.query('ROLLBACK');
+        throw error;
     }
-
-    return result.rows[0];
 }
 
 module.exports = {
@@ -216,5 +357,5 @@ module.exports = {
     createEquipment,
     updateEquipment,
     updateEquipmentStatus,
-    deleteEquipment
+    decommissionEquipment
 };
