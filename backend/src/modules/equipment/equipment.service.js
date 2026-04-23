@@ -243,7 +243,7 @@ async function createEquipment({ name, description }) {
         `INSERT INTO equipment (name, description, status)
          VALUES ($1, $2, 'available')
          RETURNING *`,
-        [name, description || null]
+        [name.trim(), description || null]
     );
 
     return result.rows[0];
@@ -260,7 +260,7 @@ async function updateEquipment({ equipmentId, name, description }) {
              description = $2
          WHERE id = $3
          RETURNING *`,
-        [name, description || null, equipmentId]
+        [name.trim(), description || null, equipmentId]
     );
 
     if (result.rows.length === 0) {
@@ -271,7 +271,7 @@ async function updateEquipment({ equipmentId, name, description }) {
 }
 
 async function updateEquipmentStatus({ equipmentId, status }) {
-    const allowedStatuses = ['available', 'out_of_order', 'decommissioned'];
+    const allowedStatuses = ['available', 'out_of_order'];
 
     if (!allowedStatuses.includes(status)) {
         throw new Error('Invalid equipment status');
@@ -280,6 +280,23 @@ async function updateEquipmentStatus({ equipmentId, status }) {
     await pool.query('BEGIN');
 
     try {
+        const currentEquipmentResult = await pool.query(
+            `SELECT id, status
+             FROM equipment
+             WHERE id = $1`,
+            [equipmentId]
+        );
+
+        if (currentEquipmentResult.rows.length === 0) {
+            throw new Error('Equipment not found');
+        }
+
+        const currentEquipment = currentEquipmentResult.rows[0];
+
+        if (currentEquipment.status === 'decommissioned') {
+            throw new Error('Decommissioned equipment status cannot be changed');
+        }
+
         const result = await pool.query(
             `UPDATE equipment
              SET status = $1
@@ -288,16 +305,13 @@ async function updateEquipmentStatus({ equipmentId, status }) {
             [status, equipmentId]
         );
 
-        if (result.rows.length === 0) {
-            throw new Error('Equipment not found');
-        }
-
-        if (status === 'decommissioned') {
+        if (status === 'out_of_order') {
             await pool.query(
                 `UPDATE reservations
                  SET status = 'disrupted'
                  WHERE equipment_id = $1
-                   AND status IN ('approved', 'pending_approval')
+                   AND status = 'approved'
+                   AND start_date <= CURRENT_DATE
                    AND end_date >= CURRENT_DATE`,
                 [equipmentId]
             );

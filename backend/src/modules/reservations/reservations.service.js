@@ -7,19 +7,46 @@ function calculateInclusiveDays(startDate, endDate) {
     const millisecondsPerDay = 1000 * 60 * 60 * 24;
     const diffInMs = end - start;
 
-    return Math.floor(diffInMs / millisecondsPerDay) +1;
+    return Math.floor(diffInMs / millisecondsPerDay) + 1;
 }
 
 async function getMyReservations(userId) {
     const result = await pool.query(
-        `SELECT r.id, r.user_id, r.equipment_id, e.name AS equipment_name, r.start_date, r.end_date, r.status, r.justification, r.approved_by, r.approved_at, r.completed_at, r.cancelled_at, r.rejection_reason, r.suggested_start_date, r.suggested_end_date, r.created_at FROM reservations r JOIN equipment e ON e.id = r.equipment_id WHERE r.user_id = $1 ORDER BY r.created_at DESC`,
+        `SELECT
+            r.id,
+            r.user_id,
+            r.equipment_id,
+            e.name AS equipment_name,
+            e.status AS equipment_status,
+            r.start_date,
+            r.end_date,
+            r.status,
+            r.justification,
+            r.approved_by,
+            r.approved_at,
+            r.completed_at,
+            r.cancelled_at,
+            r.rejection_reason,
+            r.suggested_start_date,
+            r.suggested_end_date,
+            r.created_at
+         FROM reservations r
+         JOIN equipment e ON e.id = r.equipment_id
+         WHERE r.user_id = $1
+         ORDER BY r.created_at DESC`,
         [userId]
     );
 
     return result.rows;
 }
 
-async function createReservation({ userId, equipmentId, startDate, endDate, justification }) {
+async function createReservation({
+    userId,
+    equipmentId,
+    startDate,
+    endDate,
+    justification
+}) {
     if (!equipmentId || !startDate || !endDate) {
         throw new Error('equipmentId, startDate and endDate are required');
     }
@@ -32,11 +59,13 @@ async function createReservation({ userId, equipmentId, startDate, endDate, just
     }
 
     if (start > end) {
-        throw new Error('Start date cannot be after end date');        
+        throw new Error('Start date cannot be after end date');
     }
 
     const equipmentResult = await pool.query(
-        'SELECT id, name, status FROM equipment WHERE id = $1',
+        `SELECT id, name, status
+         FROM equipment
+         WHERE id = $1`,
         [equipmentId]
     );
 
@@ -55,7 +84,11 @@ async function createReservation({ userId, equipmentId, startDate, endDate, just
     }
 
     const conflictResult = await pool.query(
-        `SELECT id FROM reservations WHERE equipment_id = $1 AND status IN ('approved', 'pending_approval') AND NOT ($3 < start_date OR $2 > end_date)`,
+        `SELECT id
+         FROM reservations
+         WHERE equipment_id = $1
+           AND status IN ('approved', 'pending_approval')
+           AND NOT ($3 < start_date OR $2 > end_date)`,
         [equipmentId, startDate, endDate]
     );
 
@@ -76,8 +109,24 @@ async function createReservation({ userId, equipmentId, startDate, endDate, just
     }
 
     const result = await pool.query(
-        `INSERT INTO reservations (user_id, equipment_id, start_date, end_date, status, justification) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
-        [userId, equipmentId, startDate, endDate, status, justification || null]
+        `INSERT INTO reservations (
+            user_id,
+            equipment_id,
+            start_date,
+            end_date,
+            status,
+            justification
+         )
+         VALUES ($1, $2, $3, $4, $5, $6)
+         RETURNING *`,
+        [
+            userId,
+            equipmentId,
+            startDate,
+            endDate,
+            status,
+            justification || null
+        ]
     );
 
     return result.rows[0];
@@ -85,7 +134,10 @@ async function createReservation({ userId, equipmentId, startDate, endDate, just
 
 async function cancelReservation({ userId, reservationId }) {
     const result = await pool.query(
-        `SELECT * FROM reservations WHERE id = $1 AND user_id = $2`,
+        `SELECT *
+         FROM reservations
+         WHERE id = $1
+           AND user_id = $2`,
         [reservationId, userId]
     );
 
@@ -110,7 +162,11 @@ async function cancelReservation({ userId, reservationId }) {
     }
 
     const updateResult = await pool.query(
-        `UPDATE reservations SET status = 'cancelled', cancelled_at = NOW() WHERE id = $1 RETURNING *`,
+        `UPDATE reservations
+         SET status = 'cancelled',
+             cancelled_at = NOW()
+         WHERE id = $1
+         RETURNING *`,
         [reservationId]
     );
 
@@ -149,7 +205,10 @@ async function completeReservation({ userId, reservationId }) {
         throw new Error('Reservation cannot be completed before it starts');
     }
 
-    if (reservation.equipment_status === 'out_of_order') {
+    if (
+        reservation.equipment_status === 'out_of_order' ||
+        reservation.equipment_status === 'decommissioned'
+    ) {
         await pool.query(
             `UPDATE reservations
              SET status = 'disrupted'
@@ -174,7 +233,24 @@ async function completeReservation({ userId, reservationId }) {
 
 async function getPendingReservations() {
     const result = await pool.query(
-        `SELECT r.id, r.user_id, u.name AS user_name, u.email AS user_email, r.equipment_id, e.name AS equipment_name, r.start_date, r.end_date, r.status, r.justification, r.created_at FROM reservations r JOIN users u ON u.id = r.user_id JOIN equipment e ON e.id = r.equipment_id WHERE r.status = 'pending_approval' ORDER BY r.created_at ASC`
+        `SELECT
+            r.id,
+            r.user_id,
+            u.name AS user_name,
+            u.email AS user_email,
+            r.equipment_id,
+            e.name AS equipment_name,
+            e.status AS equipment_status,
+            r.start_date,
+            r.end_date,
+            r.status,
+            r.justification,
+            r.created_at
+         FROM reservations r
+         JOIN users u ON u.id = r.user_id
+         JOIN equipment e ON e.id = r.equipment_id
+         WHERE r.status = 'pending_approval'
+         ORDER BY r.created_at ASC`
     );
 
     return result.rows;
@@ -182,7 +258,12 @@ async function getPendingReservations() {
 
 async function approveReservation({ reservationId, reviewerId }) {
     const existingResult = await pool.query(
-        `SELECT * FROM reservations WHERE id = $1`,
+        `SELECT
+            r.*,
+            e.status AS equipment_status
+         FROM reservations r
+         JOIN equipment e ON e.id = r.equipment_id
+         WHERE r.id = $1`,
         [reservationId]
     );
 
@@ -196,8 +277,28 @@ async function approveReservation({ reservationId, reviewerId }) {
         throw new Error('Only pending reservations can be approved');
     }
 
+    if (reservation.equipment_status === 'out_of_order') {
+        throw new Error('Cannot approve reservation because equipment is out of order');
+    }
+
+    if (reservation.equipment_status === 'decommissioned') {
+        await pool.query(
+            `UPDATE reservations
+             SET status = 'disrupted'
+             WHERE id = $1`,
+            [reservationId]
+        );
+
+        throw new Error('Cannot approve reservation because equipment is decommissioned');
+    }
+
     const updateResult = await pool.query(
-        `UPDATE reservations SET status = 'approved', approved_by = $1, approved_at = NOW() WHERE id = $2 RETURNING *`,
+        `UPDATE reservations
+         SET status = 'approved',
+             approved_by = $1,
+             approved_at = NOW()
+         WHERE id = $2
+         RETURNING *`,
         [reviewerId, reservationId]
     );
 
@@ -216,7 +317,9 @@ async function rejectReservation({
     }
 
     const existingResult = await pool.query(
-        `SELECT * FROM reservations WHERE id = $1`,
+        `SELECT *
+         FROM reservations
+         WHERE id = $1`,
         [reservationId]
     );
 
@@ -230,7 +333,10 @@ async function rejectReservation({
         throw new Error('Only pending reservations can be rejected');
     }
 
-    if ((suggestedStartDate && !suggestedEndDate) || (!suggestedStartDate && suggestedEndDate)) {
+    if (
+        (suggestedStartDate && !suggestedEndDate) ||
+        (!suggestedStartDate && suggestedEndDate)
+    ) {
         throw new Error('Both suggestedStartDate and suggestedEndDate must be provided together');
     }
 
@@ -248,7 +354,15 @@ async function rejectReservation({
     }
 
     const updateResult = await pool.query(
-        `UPDATE reservations SET status = 'rejected', rejection_reason = $1, suggested_start_date = $2, suggested_end_date = $3, approved_by = $4, approved_at = NOW() WHERE id = $5 RETURNING *`,
+        `UPDATE reservations
+         SET status = 'rejected',
+             rejection_reason = $1,
+             suggested_start_date = $2,
+             suggested_end_date = $3,
+             approved_by = $4,
+             approved_at = NOW()
+         WHERE id = $5
+         RETURNING *`,
         [
             reason,
             suggestedStartDate || null,

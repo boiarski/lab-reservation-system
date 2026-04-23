@@ -17,7 +17,7 @@ function isSameDate(dateA, dateB) {
     return normalizeDate(dateA).getTime() === normalizeDate(dateB).getTime();
 }
 
-async function disruptStartedReservationsForOutOfOrderEquipment(userId) {
+async function disruptStartedReservationsForUnavailableEquipment(userId) {
     await pool.query(
         `UPDATE reservations r
          SET status = 'disrupted'
@@ -27,7 +27,7 @@ async function disruptStartedReservationsForOutOfOrderEquipment(userId) {
            AND r.status = 'approved'
            AND r.start_date <= CURRENT_DATE
            AND r.end_date >= CURRENT_DATE
-           AND e.status = 'out_of_order'`,
+           AND e.status IN ('out_of_order', 'decommissioned')`,
         [userId]
     );
 }
@@ -69,6 +69,7 @@ async function getPendingApprovals() {
             u.email AS user_email,
             r.equipment_id,
             e.name AS equipment_name,
+            e.status AS equipment_status,
             r.start_date,
             r.end_date,
             r.status,
@@ -207,9 +208,6 @@ function buildUserWarnings(reservations) {
 }
 
 async function buildEarlyAvailabilityWarnings(userId) {
-    const today = normalizeDate(new Date());
-    const tomorrow = addDays(today, 1);
-
     const result = await pool.query(
         `SELECT
             next_r.id AS reservation_id,
@@ -222,11 +220,11 @@ async function buildEarlyAvailabilityWarnings(userId) {
            ON e.id = next_r.equipment_id
          WHERE completed_r.status = 'completed'
            AND completed_r.completed_at IS NOT NULL
-           AND DATE(completed_r.completed_at) = $1
-           AND next_r.user_id = $2
+           AND DATE(completed_r.completed_at) = CURRENT_DATE
+           AND next_r.user_id = $1
            AND next_r.status = 'approved'
-           AND next_r.start_date = $3`,
-        [today, userId, tomorrow]
+           AND next_r.start_date = CURRENT_DATE + INTERVAL '1 day'`,
+        [userId]
     );
 
     return result.rows.map(row => ({
@@ -237,7 +235,11 @@ async function buildEarlyAvailabilityWarnings(userId) {
     }));
 }
 
-function buildPrivilegedWarnings({ pendingApprovals, pendingEquipmentReports, outOfOrderEquipment }) {
+function buildPrivilegedWarnings({
+    pendingApprovals,
+    pendingEquipmentReports,
+    outOfOrderEquipment
+}) {
     const warnings = [];
 
     if (pendingApprovals.length > 0) {
@@ -266,7 +268,7 @@ function buildPrivilegedWarnings({ pendingApprovals, pendingEquipmentReports, ou
 }
 
 async function getDashboardData(user) {
-    await disruptStartedReservationsForOutOfOrderEquipment(user.id);
+    await disruptStartedReservationsForUnavailableEquipment(user.id);
 
     const myReservations = await getUserReservations(user.id);
 

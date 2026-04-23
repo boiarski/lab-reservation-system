@@ -252,11 +252,16 @@ async function updateEquipmentStatus(req, res) {
     } catch (error) {
         console.error('Update equipment status error:', error);
 
+        const knownErrors = [
+            'Invalid equipment status',
+            'Decommissioned equipment status cannot be changed'
+        ];
+
         if (error.message === 'Equipment not found') {
             return res.status(404).json({ message: error.message });
         }
 
-        if (error.message === 'Invalid equipment status') {
+        if (knownErrors.includes(error.message)) {
             return res.status(400).json({ message: error.message });
         }
 

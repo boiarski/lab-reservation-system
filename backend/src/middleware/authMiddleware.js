@@ -5,7 +5,7 @@ function authMiddleware(req, res, next) {
     const authHeader = req.headers.authorization;
 
     if (!authHeader) {
-        return res.status(401).json({ message: ' Token not provided' });
+        return res.status(401).json({ message: 'Token not provided' });
     }
 
     const parts = authHeader.split(' ');
@@ -16,22 +16,22 @@ function authMiddleware(req, res, next) {
 
     const [scheme, token] = parts;
 
-    if (scheme !== 'Bearer') {
+    if (scheme.toLowerCase() !== 'bearer') {
         return res.status(401).json({ message: 'Invalid authentication scheme' });
     }
 
     try {
-        const decode = jwt.verify(token, jwtSecret);
+        const decoded = jwt.verify(token, jwtSecret);
 
         req.user = {
-            id: decode.id,
-            email: decode.email,
-            role: decode.role
+            id: decoded.id,
+            email: decoded.email,
+            role: decoded.role
         };
 
         return next();
     } catch (error) {
-        return res.status(401).json({ message: 'Invalid or expired token'});
+        return res.status(401).json({ message: 'Invalid or expired token' });
     }
 }
 

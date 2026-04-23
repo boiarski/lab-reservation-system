@@ -3,7 +3,9 @@ const pool = require('../../db');
 
 async function getMe(userId) {
     const result = await pool.query(
-        `SELECT id, name, email, role, active, created_at FROM users WHERE id = $1`,
+        `SELECT id, name, email, role, active, created_at
+         FROM users
+         WHERE id = $1`,
         [userId]
     );
 
@@ -14,9 +16,12 @@ async function getMe(userId) {
     return result.rows[0];
 }
 
-async function deleteOwnAccount(userId) {
+async function deactivateOwnAccount(userId) {
     const result = await pool.query(
-        `UPDATE users SET active = false WHERE id = $1 RETURNING id, name, email, role, active, created_at`,
+        `UPDATE users
+         SET active = false
+         WHERE id = $1
+         RETURNING id, name, email, role, active, created_at`,
         [userId]
     );
 
@@ -29,7 +34,9 @@ async function deleteOwnAccount(userId) {
 
 async function getAllUsers() {
     const result = await pool.query(
-        `SELECT id, name, email, role, active, created_at FROM users ORDER BY id ASC`
+        `SELECT id, name, email, role, active, created_at
+         FROM users
+         ORDER BY id ASC`
     );
 
     return result.rows;
@@ -43,7 +50,10 @@ async function updateUserRole({ userId, role }) {
     }
 
     const result = await pool.query(
-        `UPDATE users SET role = $1 WHERE id = $2 RETURNING id, name, email, role, active, created_at`,
+        `UPDATE users
+         SET role = $1
+         WHERE id = $2
+         RETURNING id, name, email, role, active, created_at`,
         [role, userId]
     );
 
@@ -85,9 +95,13 @@ async function createUser({ name, email, password, role }) {
         throw new Error('Invalid role');
     }
 
+    const normalizedEmail = email.trim().toLowerCase();
+
     const existingUser = await pool.query(
-        `SELECT id FROM users WHERE email = $1`,
-        [email]
+        `SELECT id
+         FROM users
+         WHERE email = $1`,
+        [normalizedEmail]
     );
 
     if (existingUser.rows.length > 0) {
@@ -97,8 +111,10 @@ async function createUser({ name, email, password, role }) {
     const passwordHash = await bcrypt.hash(password, 10);
 
     const result = await pool.query(
-        `INSERT INTO users (name, email, password_hash, role) VALUES ($1, $2, $3, $4) RETURNING id, name, email, role, active, created_at`,
-        [name, email, passwordHash, role || 'user']
+        `INSERT INTO users (name, email, password_hash, role)
+         VALUES ($1, $2, $3, $4)
+         RETURNING id, name, email, role, active, created_at`,
+        [name.trim(), normalizedEmail, passwordHash, role || 'user']
     );
 
     return result.rows[0];
@@ -114,7 +130,10 @@ async function changeOwnPassword({ userId, currentPassword, newPassword }) {
     }
 
     const result = await pool.query(
-        `SELECT id, password_hash FROM users WHERE id = $1 AND active = true`,
+        `SELECT id, password_hash
+         FROM users
+         WHERE id = $1
+           AND active = true`,
         [userId]
     );
 
@@ -136,7 +155,9 @@ async function changeOwnPassword({ userId, currentPassword, newPassword }) {
     const newPasswordHash = await bcrypt.hash(newPassword, 10);
 
     await pool.query(
-        `UPDATE users SET password_hash = $1 WHERE id = $2`,
+        `UPDATE users
+         SET password_hash = $1
+         WHERE id = $2`,
         [newPasswordHash, userId]
     );
 
@@ -145,7 +166,7 @@ async function changeOwnPassword({ userId, currentPassword, newPassword }) {
 
 module.exports = {
     getMe,
-    deleteOwnAccount,
+    deactivateOwnAccount,
     getAllUsers,
     updateUserRole,
     updateUserActiveStatus,

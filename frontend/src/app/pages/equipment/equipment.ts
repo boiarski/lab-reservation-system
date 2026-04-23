@@ -25,8 +25,6 @@ export class EquipmentComponent implements OnInit {
   }
 
   loadEquipment() {
-    console.log('loadEquipment called');
-
     this.isLoading.set(true);
     this.errorMessage.set('');
 

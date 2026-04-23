@@ -9,7 +9,8 @@ async function getMyReservations(req, res) {
         console.error('Get my reservations error:', error.message);
 
         return res.status(500).json({
-            message: 'Error fetching reservations'
+            message: 'Error fetching reservations',
+            debug: error.message
         });
     }
 }
@@ -19,7 +20,11 @@ async function createReservation(req, res) {
 
     try {
         const reservation = await reservationsService.createReservation({
-            userId: req.user.id, equipmentId, startDate, endDate, justification
+            userId: req.user.id,
+            equipmentId,
+            startDate,
+            endDate,
+            justification
         });
 
         return res.status(201).json({
@@ -82,7 +87,8 @@ async function cancelReservation(req, res) {
         }
 
         return res.status(500).json({
-            message: 'Error cancelling reservation'
+            message: 'Error cancelling reservation',
+            debug: error.message
         });
     }
 }
@@ -160,7 +166,13 @@ async function approveReservation(req, res) {
             return res.status(404).json({ message: error.message });
         }
 
-        if (error.message === 'Only pending reservations can be approved') {
+        const knownErrors = [
+            'Only pending reservations can be approved',
+            'Cannot approve reservation because equipment is out of order',
+            'Cannot approve reservation because equipment is decommissioned'
+        ];
+
+        if (knownErrors.includes(error.message)) {
             return res.status(400).json({ message: error.message });
         }
 

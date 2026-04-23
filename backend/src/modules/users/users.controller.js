@@ -18,23 +18,23 @@ async function getMe(req, res) {
     }
 }
 
-async function deleteOwnAccount(req, res) {
+async function deactivateOwnAccount(req, res) {
     try {
-        const user = await usersService.deleteOwnAccount(req.user.id);
+        const user = await usersService.deactivateOwnAccount(req.user.id);
 
         return res.status(200).json({
-            message: 'Account deleted successfully',
+            message: 'Account deactivated successfully',
             user
         });
     } catch (error) {
-        console.error('Delete own account error:', error);
+        console.error('Deactivate own account error:', error);
 
         if (error.message === 'User not found') {
             return res.status(404).json({ message: error.message });
         }
 
         return res.status(500).json({
-            message: 'Error deleting account',
+            message: 'Error deactivating account',
             debug: error.message
         });
     }
@@ -198,7 +198,7 @@ async function changeOwnPassword(req, res) {
 
 module.exports = {
     getMe,
-    deleteOwnAccount,
+    deactivateOwnAccount,
     getAllUsers,
     updateUserRole,
     updateUserActiveStatus,

@@ -9,10 +9,26 @@ router.use(authMiddleware);
 
 router.get('/me', reservationsController.getMyReservations);
 router.post('/', reservationsController.createReservation);
+
 router.patch('/:id/cancel', reservationsController.cancelReservation);
 router.patch('/:id/complete', reservationsController.completeReservation);
-router.get('/pending', roleMiddleware(['helper', 'admin']), reservationsController.getPendingReservations);
-router.patch('/:id/approve', roleMiddleware(['helper', 'admin']), reservationsController.approveReservation);
-router.patch('/:id/reject', roleMiddleware(['helper', 'admin']), reservationsController.rejectReservation);
+
+router.get(
+    '/pending',
+    roleMiddleware(['helper', 'admin']),
+    reservationsController.getPendingReservations
+);
+
+router.patch(
+    '/:id/approve',
+    roleMiddleware(['helper', 'admin']),
+    reservationsController.approveReservation
+);
+
+router.patch(
+    '/:id/reject',
+    roleMiddleware(['helper', 'admin']),
+    reservationsController.rejectReservation
+);
 
 module.exports = router;

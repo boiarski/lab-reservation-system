@@ -4,9 +4,19 @@ const pool = require('../../db');
 const { jwtSecret, jwtExpiresIn } = require('../../config/auth');
 
 async function loginUser({ email, password }) {
+    const normalizedEmail = email.trim().toLowerCase();
+
     const result = await pool.query(
-        `SELECT id, name, email, password_hash, role, active FROM users WHERE email = $1`,
-        [email]
+        `SELECT
+            id,
+            name,
+            email,
+            password_hash,
+            role,
+            active
+         FROM users
+         WHERE email = $1`,
+        [normalizedEmail]
     );
 
     if (result.rows.length === 0) {
@@ -32,7 +42,7 @@ async function loginUser({ email, password }) {
             role: user.role
         },
         jwtSecret,
-        { expiresIn: jwtExpiresIn}
+        { expiresIn: jwtExpiresIn }
     );
 
     return {
