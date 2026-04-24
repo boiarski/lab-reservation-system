@@ -27,5 +27,6 @@ yarn-error.log*
 
 # OS/editor files
 .DS_Store
-.vscode
+.vscode/
+frontend/.vscode/
 .idea
