@@ -32,20 +32,41 @@
   </p>
 }
 
-@if (equipment()) {
-  <section data-testid="reservation-equipment-summary">
-    <h2>{{ equipment().name }}</h2>
-    <p>{{ equipment().description }}</p>
-    <p>Status: {{ equipment().status }}</p>
+@if (equipment(); as equipmentItem) {
+  <section
+    data-testid="reservation-equipment-summary"
+    [attr.data-equipment-id]="equipmentItem.id"
+    [attr.data-equipment-status]="equipmentItem.status"
+  >
+    <h2>{{ equipmentItem.name }}</h2>
+
+    @if (equipmentItem.description) {
+      <p data-testid="reservation-equipment-description">
+        {{ equipmentItem.description }}
+      </p>
+    }
+
+    <p>
+      Status:
+      <span data-testid="reservation-equipment-status">
+        {{ equipmentItem.status }}
+      </span>
+    </p>
   </section>
 
-  @if (equipment().status === 'out_of_order') {
+  @if (equipmentItem.status === 'out_of_order') {
     <p data-testid="reservation-equipment-out-of-order">
       This equipment is out of order and cannot be reserved.
     </p>
   }
 
-  @if (equipment().status === 'available') {
+  @if (equipmentItem.status === 'decommissioned') {
+    <p data-testid="reservation-equipment-decommissioned">
+      This equipment has been decommissioned and cannot be reserved.
+    </p>
+  }
+
+  @if (equipmentItem.status === 'available') {
     <form (ngSubmit)="submit()" data-testid="reservation-form">
       <div>
         <label>Start Date</label>

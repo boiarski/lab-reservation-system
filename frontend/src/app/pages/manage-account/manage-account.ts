@@ -5,6 +5,11 @@ import { Router, RouterModule } from '@angular/router';
 import { ApiService } from '../../services/api';
 import { AuthService } from '../../services/auth';
 
+type Notification = {
+  type: 'success' | 'error';
+  message: string;
+};
+
 @Component({
   selector: 'app-manage-account',
   standalone: true,
@@ -12,24 +17,26 @@ import { AuthService } from '../../services/auth';
   templateUrl: './manage-account.html',
   styleUrl: './manage-account.css'
 })
+
 export class ManageAccountComponent {
   currentPassword = '';
   newPassword = '';
+
+  currentUser: any | null = null;
 
   isSubmittingPassword = signal(false);
   isDeactivatingAccount = signal(false);
   showDeactivateConfirm = signal(false);
 
-  notification = signal<{
-    type: 'success' | 'error';
-    message: string;
-  } | null>(null);
+  notification = signal<Notification | null>(null);
 
   constructor(
     private api: ApiService,
     private auth: AuthService,
     private router: Router
-  ) {}
+  ) {
+    this.currentUser = this.auth.getUser();
+  }
 
   showSuccess(message: string) {
     this.notification.set({ type: 'success', message });
@@ -43,10 +50,17 @@ export class ManageAccountComponent {
     this.notification.set(null);
   }
 
+  isAdmin(): boolean {
+    return this.currentUser?.role === 'admin';
+  }
+
   submitPasswordChange() {
+    const currentPassword = this.currentPassword.trim();
+    const newPassword = this.newPassword.trim();
+
     this.closeNotification();
 
-    if (!this.currentPassword || !this.newPassword) {
+    if (!currentPassword || !newPassword) {
       this.showError('Current password and new password are required');
       return;
     }
@@ -54,8 +68,8 @@ export class ManageAccountComponent {
     this.isSubmittingPassword.set(true);
 
     this.api.changePassword({
-      currentPassword: this.currentPassword,
-      newPassword: this.newPassword
+      currentPassword,
+      newPassword
     }).subscribe({
       next: () => {
         this.showSuccess('Password changed successfully.');
@@ -86,6 +100,7 @@ export class ManageAccountComponent {
 
     this.api.deactivateOwnAccount().subscribe({
       next: () => {
+        this.showDeactivateConfirm.set(false);
         this.auth.logout();
         this.isDeactivatingAccount.set(false);
         this.router.navigate(['/login']);

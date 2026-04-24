@@ -17,6 +17,23 @@ async function getMe(userId) {
 }
 
 async function deactivateOwnAccount(userId) {
+    const userResult = await pool.query(
+        `SELECT id, name, email, role, active, created_at
+         FROM users
+         WHERE id = $1`,
+        [userId]
+    );
+
+    if (userResult.rows.length === 0) {
+        throw new Error('User not found');
+    }
+
+    const user = userResult.rows[0];
+
+    if (user.role === 'admin') {
+        throw new Error('Admins cannot deactivate their own account');
+    }
+
     const result = await pool.query(
         `UPDATE users
          SET active = false
@@ -24,10 +41,6 @@ async function deactivateOwnAccount(userId) {
          RETURNING id, name, email, role, active, created_at`,
         [userId]
     );
-
-    if (result.rows.length === 0) {
-        throw new Error('User not found');
-    }
 
     return result.rows[0];
 }

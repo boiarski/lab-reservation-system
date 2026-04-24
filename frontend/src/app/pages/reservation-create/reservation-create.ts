@@ -1,8 +1,20 @@
 import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute, Router, RouterModule } from '@angular/router';
+import { ActivatedRoute, RouterModule } from '@angular/router';
 import { ApiService } from '../../services/api';
+
+type Notification = {
+  type: 'success' | 'error';
+  message: string;
+};
+
+type EquipmentSummary = {
+  id: number | string;
+  name: string;
+  description: string | null;
+  status: string;
+};
 
 @Component({
   selector: 'app-reservation-create',
@@ -13,7 +25,7 @@ import { ApiService } from '../../services/api';
 })
 export class ReservationCreateComponent implements OnInit {
   equipmentId = signal<string | null>(null);
-  equipment = signal<any | null>(null);
+  equipment = signal<EquipmentSummary | null>(null);
 
   startDate = '';
   endDate = '';
@@ -22,14 +34,10 @@ export class ReservationCreateComponent implements OnInit {
   isLoading = signal(false);
   isSubmitting = signal(false);
 
-  notification = signal<{
-    type: 'success' | 'error';
-    message: string;
-  } | null>(null);
+  notification = signal<Notification | null>(null);
 
   constructor(
     private route: ActivatedRoute,
-    private router: Router,
     private api: ApiService
   ) {}
 
@@ -50,7 +58,7 @@ export class ReservationCreateComponent implements OnInit {
     this.closeNotification();
 
     this.api.getEquipmentById(id).subscribe({
-      next: (data: any) => {
+      next: (data: EquipmentSummary) => {
         this.equipment.set(data);
         this.isLoading.set(false);
       },
@@ -81,9 +89,12 @@ export class ReservationCreateComponent implements OnInit {
   }
 
   submit() {
+    const equipmentId = this.equipmentId();
+    const justification = this.justification.trim();
+
     this.closeNotification();
 
-    if (!this.equipmentId()) {
+    if (!equipmentId) {
       this.showError('Equipment id was not provided');
       return;
     }
@@ -94,10 +105,10 @@ export class ReservationCreateComponent implements OnInit {
     }
 
     const payload = {
-      equipmentId: Number(this.equipmentId()),
+      equipmentId: Number(equipmentId),
       startDate: this.startDate,
       endDate: this.endDate,
-      justification: this.justification || null
+      justification: justification || null
     };
 
     this.isSubmitting.set(true);

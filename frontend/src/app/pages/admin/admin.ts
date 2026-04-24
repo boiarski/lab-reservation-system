@@ -5,6 +5,11 @@ import { RouterModule } from '@angular/router';
 import { ApiService } from '../../services/api';
 import { AuthService } from '../../services/auth';
 
+type Notification = {
+  type: 'success' | 'error';
+  message: string;
+};
+
 @Component({
   selector: 'app-admin',
   standalone: true,
@@ -28,10 +33,7 @@ export class AdminComponent implements OnInit {
   isLoading = signal(false);
   actionLoadingId = signal<number | string | null>(null);
 
-  notification = signal<{
-    type: 'success' | 'error';
-    message: string;
-  } | null>(null);
+  notification = signal<Notification | null>(null);
 
   constructor(
     private api: ApiService,
@@ -40,7 +42,10 @@ export class AdminComponent implements OnInit {
 
   ngOnInit(): void {
     this.currentUser.set(this.auth.getUser());
-    this.loadEquipment();
+
+    if (this.isHelperOrAdmin()) {
+      this.loadEquipment();
+    }
 
     if (this.isAdmin()) {
       this.loadUsers();
@@ -75,35 +80,6 @@ export class AdminComponent implements OnInit {
     });
   }
 
-  createUser() {
-    this.closeNotification();
-
-    if (!this.newUserName || !this.newUserEmail || !this.newUserPassword) {
-      this.showError('Name, email and password are required');
-      return;
-    }
-
-    this.api.createUser({
-      name: this.newUserName,
-      email: this.newUserEmail,
-      password: this.newUserPassword,
-      role: this.newUserRole
-    }).subscribe({
-      next: () => {
-        this.showSuccess('User created successfully.');
-        this.newUserName = '';
-        this.newUserEmail = '';
-        this.newUserPassword = '';
-        this.newUserRole = 'user';
-        this.loadUsers();
-      },
-      error: (err: any) => {
-        console.error(err);
-        this.showError(err.error?.message || 'Could not create user');
-      }
-    });
-  }
-
   loadUsers() {
     this.api.getUsers().subscribe({
       next: (data: any[]) => {
@@ -112,6 +88,42 @@ export class AdminComponent implements OnInit {
       error: (err: any) => {
         console.error(err);
         this.showError('Could not load users');
+      }
+    });
+  }
+
+  createUser() {
+    this.closeNotification();
+
+    const name = this.newUserName.trim();
+    const email = this.newUserEmail.trim().toLowerCase();
+    const password = this.newUserPassword.trim();
+
+    if (!name || !email || !password) {
+      this.showError('Name, email and password are required');
+      return;
+    }
+
+    this.api.createUser({
+      name,
+      email,
+      password,
+      role: this.newUserRole
+    }).subscribe({
+      next: () => {
+        this.showSuccess('User created successfully.');
+        this.newUserName = '';
+        this.newUserEmail = '';
+        this.newUserPassword = '';
+        this.newUserRole = 'user';
+
+        if (this.isAdmin()) {
+          this.loadUsers();
+        }
+      },
+      error: (err: any) => {
+        console.error(err);
+        this.showError(err.error?.message || 'Could not create user');
       }
     });
   }
@@ -159,14 +171,17 @@ export class AdminComponent implements OnInit {
   createEquipment() {
     this.closeNotification();
 
-    if (!this.newEquipmentName.trim()) {
+    const name = this.newEquipmentName.trim();
+    const description = this.newEquipmentDescription.trim();
+
+    if (!name) {
       this.showError('Equipment name is required');
       return;
     }
 
     this.api.createEquipment({
-      name: this.newEquipmentName,
-      description: this.newEquipmentDescription
+      name,
+      description
     }).subscribe({
       next: () => {
         this.showSuccess('Equipment created successfully.');
@@ -199,7 +214,7 @@ export class AdminComponent implements OnInit {
     });
   }
 
-  updateStatus(item: any, status: string) {
+  updateEquipmentStatus(item: any, status: string) {
     this.actionLoadingId.set(item.id);
     this.closeNotification();
 

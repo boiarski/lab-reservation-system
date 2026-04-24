@@ -25,13 +25,21 @@
     />
   </div>
 
-  <button type="submit" data-testid="login-submit">
-    Login
+  <button
+    type="submit"
+    [disabled]="isSubmitting()"
+    data-testid="login-submit"
+  >
+    @if (isSubmitting()) {
+      Logging in...
+    } @else {
+      Login
+    }
   </button>
 </form>
 
-@if (errorMessage) {
+@if (errorMessage()) {
   <p data-testid="login-error">
-    {{ errorMessage }}
+    {{ errorMessage() }}
   </p>
 }

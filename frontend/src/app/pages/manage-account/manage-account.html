@@ -34,6 +34,7 @@
         name="currentPassword"
         [(ngModel)]="currentPassword"
         data-testid="current-password-input"
+        required
       />
     </div>
 
@@ -44,6 +45,7 @@
         name="newPassword"
         [(ngModel)]="newPassword"
         data-testid="new-password-input"
+        required
       />
     </div>
 
@@ -61,51 +63,53 @@
   </form>
 </section>
 
-<hr />
+@if (!isAdmin()) {
+  <hr />
 
-<section data-testid="deactivate-account-section">
-  <h2>Deactivate Account</h2>
+  <section data-testid="deactivate-account-section">
+    <h2>Deactivate Account</h2>
 
-  <p>
-    Deactivating your account will prevent you from logging in again.
-  </p>
+    <p>
+      Deactivating your account will prevent you from logging in again.
+    </p>
 
-  @if (!showDeactivateConfirm()) {
-    <button
-      type="button"
-      (click)="openDeactivateConfirm()"
-      data-testid="open-deactivate-account-confirm-button"
-    >
-      Deactivate my account
-    </button>
-  }
-
-  @if (showDeactivateConfirm()) {
-    <div data-testid="deactivate-account-confirmation">
-      <p>
-        Are you sure you want to deactivate your account?
-      </p>
-
+    @if (!showDeactivateConfirm()) {
       <button
         type="button"
-        (click)="deactivateAccount()"
-        [disabled]="isDeactivatingAccount()"
-        data-testid="confirm-deactivate-account-button"
+        (click)="openDeactivateConfirm()"
+        data-testid="open-deactivate-account-confirm-button"
       >
-        @if (isDeactivatingAccount()) {
-          Deactivating...
-        } @else {
-          Yes, deactivate my account
-        }
+        Deactivate my account
       </button>
+    }
 
-      <button
-        type="button"
-        (click)="cancelDeactivateConfirm()"
-        data-testid="cancel-deactivate-account-button"
-      >
-        Cancel
-      </button>
-    </div>
-  }
-</section>
+    @if (showDeactivateConfirm()) {
+      <div data-testid="deactivate-account-confirmation">
+        <p>
+          Are you sure you want to deactivate your account?
+        </p>
+
+        <button
+          type="button"
+          (click)="deactivateAccount()"
+          [disabled]="isDeactivatingAccount()"
+          data-testid="confirm-deactivate-account-button"
+        >
+          @if (isDeactivatingAccount()) {
+            Deactivating...
+          } @else {
+            Yes, deactivate my account
+          }
+        </button>
+
+        <button
+          type="button"
+          (click)="cancelDeactivateConfirm()"
+          data-testid="cancel-deactivate-account-button"
+        >
+          Cancel
+        </button>
+      </div>
+    }
+  </section>
+}

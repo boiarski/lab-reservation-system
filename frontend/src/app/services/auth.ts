@@ -35,7 +35,12 @@ export class AuthService {
       return null;
     }
 
-    return JSON.parse(user);
+    try {
+      return JSON.parse(user);
+    } catch {
+      this.logout();
+      return null;
+    }
   }
 
   isAuthenticated(): boolean {

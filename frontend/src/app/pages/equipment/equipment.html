@@ -22,10 +22,18 @@
 
 <ul data-testid="equipment-list">
   @for (item of equipment(); track item.id) {
-    <li data-testid="equipment-item">
+    <li
+      data-testid="equipment-item"
+      [attr.data-equipment-id]="item.id"
+      [attr.data-equipment-status]="item.status"
+    >
       <strong>{{ item.name }}</strong>
 
-      <p>{{ item.description }}</p>
+      @if (item.description) {
+        <p data-testid="equipment-description">
+          {{ item.description }}
+        </p>
+      }
 
       <p>
         Status:

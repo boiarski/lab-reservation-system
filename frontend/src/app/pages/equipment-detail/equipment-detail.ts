@@ -4,6 +4,25 @@ import { ActivatedRoute, RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../services/api';
 
+type Notification = {
+  type: 'success' | 'error';
+  message: string;
+};
+
+type EquipmentDetail = {
+  id: number | string;
+  name: string;
+  description: string | null;
+  status: string;
+};
+
+type EquipmentReservation = {
+  id: number | string;
+  start_date: string;
+  end_date: string;
+  status: string;
+};
+
 @Component({
   selector: 'app-equipment-detail',
   standalone: true,
@@ -12,17 +31,14 @@ import { ApiService } from '../../services/api';
   styleUrl: './equipment-detail.css'
 })
 export class EquipmentDetailComponent implements OnInit {
-  equipment = signal<any | null>(null);
-  reservations = signal<any[]>([]);
+  equipment = signal<EquipmentDetail | null>(null);
+  reservations = signal<EquipmentReservation[]>([]);
   isLoading = signal(false);
 
   issueReason = '';
   isReportingIssue = signal(false);
 
-  notification = signal<{
-    type: 'success' | 'error';
-    message: string;
-  } | null>(null);
+  notification = signal<Notification | null>(null);
 
   constructor(
     private route: ActivatedRoute,
@@ -45,7 +61,7 @@ export class EquipmentDetailComponent implements OnInit {
     this.closeNotification();
 
     this.api.getEquipmentAvailability(equipmentId).subscribe({
-      next: (data: any) => {
+      next: (data: { equipment: EquipmentDetail; reservations: EquipmentReservation[] }) => {
         this.equipment.set(data.equipment);
         this.reservations.set(data.reservations);
         this.isLoading.set(false);
@@ -78,13 +94,14 @@ export class EquipmentDetailComponent implements OnInit {
 
   reportIssue() {
     const currentEquipment = this.equipment();
+    const reason = this.issueReason.trim();
 
     if (!currentEquipment) {
       this.showError('Equipment was not loaded');
       return;
     }
 
-    if (!this.issueReason.trim()) {
+    if (!reason) {
       this.showError('Issue reason is required');
       return;
     }
@@ -93,7 +110,7 @@ export class EquipmentDetailComponent implements OnInit {
     this.closeNotification();
 
     this.api.reportEquipmentIssue(currentEquipment.id, {
-      reason: this.issueReason
+      reason
     }).subscribe({
       next: () => {
         this.showSuccess('Equipment issue reported successfully.');

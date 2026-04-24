@@ -17,6 +17,10 @@ export class ApiService {
   private getHeaders() {
     const token = this.auth.getToken();
 
+    if (!token) {
+      return {};
+    }
+
     return {
       headers: new HttpHeaders({
         Authorization: `Bearer ${token}`
@@ -29,9 +33,7 @@ export class ApiService {
   }
 
   getEquipment() {
-    const url = `${this.baseUrl}/equipment`;
-
-    return this.http.get<any[]>(url, this.getHeaders());
+    return this.http.get<any[]>(`${this.baseUrl}/equipment`, this.getHeaders());
   }
 
   getEquipmentById(id: number | string) {

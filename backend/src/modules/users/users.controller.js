@@ -33,6 +33,10 @@ async function deactivateOwnAccount(req, res) {
             return res.status(404).json({ message: error.message });
         }
 
+        if (error.message === 'Admins cannot deactivate their own account') {
+            return res.status(403).json({ message: error.message });
+        }
+
         return res.status(500).json({
             message: 'Error deactivating account',
             debug: error.message

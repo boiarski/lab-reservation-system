@@ -95,7 +95,12 @@
 
     <ul data-testid="users-list">
       @for (user of users(); track user.id) {
-        <li data-testid="user-management-item">
+        <li
+          data-testid="user-management-item"
+          [attr.data-user-id]="user.id"
+          [attr.data-user-role]="user.role"
+          [attr.data-user-active]="user.active"
+        >
           <strong>{{ user.name }}</strong>
           —
           {{ user.email }}
@@ -104,9 +109,9 @@
           —
           Active: {{ user.active }}
 
-          <div>
-            <label>Role</label>
+          <label>Role</label>
 
+          <div class="user-actions">
             <select
               [ngModel]="user.role"
               (ngModelChange)="updateUserRole(user, $event)"
@@ -117,9 +122,7 @@
               <option value="helper">Helper</option>
               <option value="admin">Admin</option>
             </select>
-          </div>
 
-          <div>
             @if (user.active) {
               <button
                 type="button"
@@ -190,39 +193,45 @@
 
     <ul data-testid="admin-equipment-list">
       @for (item of equipment(); track item.id) {
-        <li data-testid="admin-equipment-item">
+        <li
+          data-testid="admin-equipment-item"
+          [attr.data-equipment-id]="item.id"
+          [attr.data-equipment-status]="item.status"
+        >
           <strong>{{ item.name }}</strong>
           —
           {{ item.status }}
 
-          <button
-            type="button"
-            (click)="updateStatus(item, 'available')"
-            [disabled]="actionLoadingId() === item.id || item.status === 'available' || item.status === 'decommissioned'"
-            data-testid="mark-equipment-available-button"
-          >
-            Mark available
-          </button>
-
-          <button
-            type="button"
-            (click)="updateStatus(item, 'out_of_order')"
-            [disabled]="actionLoadingId() === item.id || item.status === 'out_of_order' || item.status === 'decommissioned'"
-            data-testid="mark-equipment-out-of-order-button"
-          >
-            Mark out of order
-          </button>
-
-          @if (isAdmin()) {
+          <div class="action-buttons">
             <button
               type="button"
-              (click)="decommissionEquipment(item)"
-              [disabled]="actionLoadingId() === 'equipment-decommission-' + item.id || item.status === 'decommissioned'"
-              data-testid="decommission-equipment-button"
+              (click)="updateEquipmentStatus(item, 'available')"
+              [disabled]="actionLoadingId() === item.id || item.status === 'available' || item.status === 'decommissioned'"
+              data-testid="mark-equipment-available-button"
             >
-              Decommission
+              Mark available
             </button>
-          }
+
+            <button
+              type="button"
+              (click)="updateEquipmentStatus(item, 'out_of_order')"
+              [disabled]="actionLoadingId() === item.id || item.status === 'out_of_order' || item.status === 'decommissioned'"
+              data-testid="mark-equipment-out-of-order-button"
+            >
+              Mark out of order
+            </button>
+
+            @if (isAdmin()) {
+              <button
+                type="button"
+                (click)="decommissionEquipment(item)"
+                [disabled]="actionLoadingId() === 'equipment-decommission-' + item.id || item.status === 'decommissioned'"
+                data-testid="decommission-equipment-button"
+              >
+                Decommission
+              </button>
+            }
+          </div>
         </li>
       }
     </ul>

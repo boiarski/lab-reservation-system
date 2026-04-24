@@ -1,18 +1,22 @@
-<h1>Dashboard</h1>
+<div class="page-header">
+  <h1>Dashboard</h1>
 
-<button (click)="logout()" data-testid="logout-button">
-  Logout
-</button>
+  <button (click)="logout()" data-testid="logout-button">
+    Logout
+  </button>
+</div>
 
 <nav>
   @if (dashboard()?.user.role === 'admin' || dashboard()?.user.role === 'helper') {
-    <a routerLink="/admin" data-testid="nav-admin">
+    <a routerLink="/admin" data-testid="nav-management">
       Management
     </a>
   }
+
   <a routerLink="/equipment" data-testid="nav-equipment">
     Equipment
   </a>
+
   <a routerLink="/manage-account" data-testid="nav-manage-account">
     Manage Account
   </a>
@@ -88,7 +92,12 @@
 
       <ul>
         @for (reservation of dashboard().myReservations; track reservation.id) {
-          <li data-testid="dashboard-reservation">
+          <li
+            data-testid="dashboard-reservation"
+            [attr.data-reservation-id]="reservation.id"
+            [attr.data-reservation-status]="reservation.status"
+            [attr.data-equipment-status]="reservation.equipment_status"
+          >
             <strong>{{ reservation.equipment_name }}</strong>
             —
             {{ reservation.start_date }}
@@ -135,7 +144,11 @@
 
         <ul>
           @for (approval of dashboard().pendingApprovals; track approval.id) {
-            <li data-testid="pending-approval">
+            <li
+              data-testid="pending-approval"
+              [attr.data-reservation-id]="approval.id"
+              [attr.data-equipment-status]="approval.equipment_status"
+            >
               <strong>{{ approval.equipment_name }}</strong>
               requested by {{ approval.user_email }}
               —
@@ -228,7 +241,11 @@
 
         <ul>
           @for (report of dashboard().pendingEquipmentReports; track report.id) {
-            <li data-testid="pending-equipment-report">
+            <li
+              data-testid="pending-equipment-report"
+              [attr.data-report-id]="report.id"
+              [attr.data-equipment-id]="report.equipment_id"
+            >
               <strong>{{ report.equipment_name }}</strong>
               —
               {{ report.reason }}

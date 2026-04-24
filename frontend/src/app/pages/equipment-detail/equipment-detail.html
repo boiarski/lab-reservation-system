@@ -27,24 +27,36 @@
   </p>
 }
 
-@if (equipment()) {
-  <section data-testid="equipment-detail">
-    <h1>{{ equipment().name }}</h1>
+@if (equipment(); as equipmentItem) {
+  <section
+    data-testid="equipment-detail"
+    [attr.data-equipment-id]="equipmentItem.id"
+    [attr.data-equipment-status]="equipmentItem.status"
+  >
+    <h1>{{ equipmentItem.name }}</h1>
 
-    <p data-testid="equipment-description">
-      {{ equipment().description }}
-    </p>
+    @if (equipmentItem.description) {
+      <p data-testid="equipment-description">
+        {{ equipmentItem.description }}
+      </p>
+    }
 
     <p>
       Status:
       <strong data-testid="equipment-status">
-        {{ equipment().status }}
+        {{ equipmentItem.status }}
       </strong>
     </p>
 
-    @if (equipment().status === 'out_of_order') {
+    @if (equipmentItem.status === 'out_of_order') {
       <p data-testid="equipment-out-of-order-warning">
         This equipment is currently out of order and cannot be reserved.
+      </p>
+    }
+
+    @if (equipmentItem.status === 'decommissioned') {
+      <p data-testid="equipment-decommissioned-warning">
+        This equipment has been decommissioned and cannot be reserved.
       </p>
     }
 
@@ -62,7 +74,11 @@
       @if (reservations().length > 0) {
         <ul data-testid="availability-list">
           @for (reservation of reservations(); track reservation.id) {
-            <li data-testid="availability-item">
+            <li
+              data-testid="availability-item"
+              [attr.data-reservation-id]="reservation.id"
+              [attr.data-reservation-status]="reservation.status"
+            >
               {{ reservation.start_date }} to {{ reservation.end_date }}
               —
               {{ reservation.status }}
@@ -72,9 +88,9 @@
       }
     </section>
 
-    @if (equipment().status === 'available') {
+    @if (equipmentItem.status === 'available') {
       <a
-        [routerLink]="['/equipment', equipment().id, 'reserve']"
+        [routerLink]="['/equipment', equipmentItem.id, 'reserve']"
         data-testid="reserve-equipment-link"
       >
         Reserve this equipment
@@ -86,19 +102,19 @@
     <section data-testid="report-issue-section">
       <h2>Report equipment issue</h2>
 
-      @if (equipment().status === 'out_of_order') {
+      @if (equipmentItem.status === 'out_of_order') {
         <p data-testid="equipment-already-out-of-order">
           This equipment is already marked as out of order.
         </p>
       }
 
-      @if (equipment().status === 'decommissioned') {
+      @if (equipmentItem.status === 'decommissioned') {
         <p data-testid="equipment-decommissioned-report-blocked">
           This equipment has been decommissioned and cannot be reported.
         </p>
       }
 
-      @if (equipment().status === 'available') {
+      @if (equipmentItem.status === 'available') {
         <form (ngSubmit)="reportIssue()" data-testid="report-issue-form">
           <label>Reason</label>
 

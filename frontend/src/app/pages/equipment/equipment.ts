@@ -3,6 +3,13 @@ import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
 import { ApiService } from '../../services/api';
 
+type EquipmentItem = {
+  id: number | string;
+  name: string;
+  description: string | null;
+  status: string;
+};
+
 @Component({
   selector: 'app-equipment',
   standalone: true,
@@ -11,7 +18,7 @@ import { ApiService } from '../../services/api';
   styleUrl: './equipment.css'
 })
 export class EquipmentComponent implements OnInit {
-  equipment = signal<any[]>([]);
+  equipment = signal<EquipmentItem[]>([]);
   errorMessage = signal('');
   isLoading = signal(false);
 
@@ -29,18 +36,19 @@ export class EquipmentComponent implements OnInit {
     this.errorMessage.set('');
 
     this.api.getEquipment().subscribe({
-      next: (data: any[]) => {
+      next: (data: EquipmentItem[]) => {
         this.equipment.set(data);
         this.isLoading.set(false);
       },
       error: (err: any) => {
+        console.error(err);
         this.errorMessage.set('Could not load equipment');
         this.isLoading.set(false);
       }
     });
   }
 
-  openEquipment(item: any) {
+  openEquipment(item: EquipmentItem) {
     this.router.navigate(['/equipment', item.id]);
   }
 }

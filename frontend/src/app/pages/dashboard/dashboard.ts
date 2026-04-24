@@ -5,6 +5,11 @@ import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../services/api';
 import { AuthService } from '../../services/auth';
 
+type Notification = {
+  type: 'success' | 'error';
+  message: string;
+};
+
 @Component({
   selector: 'app-dashboard',
   standalone: true,
@@ -14,10 +19,7 @@ import { AuthService } from '../../services/auth';
 })
 export class DashboardComponent implements OnInit {
   dashboard = signal<any | null>(null);
-  notification = signal<{
-    type: 'success' | 'error';
-    message: string;
-  } | null>(null);
+  notification = signal<Notification | null>(null);
 
   isLoading = signal(false);
   actionLoadingId = signal<number | string | null>(null);
@@ -225,7 +227,10 @@ export class DashboardComponent implements OnInit {
       return false;
     }
 
-    if (reservation.equipment_status === 'out_of_order') {
+    if (
+      reservation.equipment_status === 'out_of_order' ||
+      reservation.equipment_status === 'decommissioned'
+    ) {
       return false;
     }
 
