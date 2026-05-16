@@ -1,27 +1,30 @@
 # Lab Reservation System
 
-Fullstack application for managing laboratory equipment reservations.
+Fullstack application for managing laboratory equipment reservations in a controlled lab environment.
 
 ## Features
 
-- User authentication (JWT)
+- User authentication with JWT
+- Role-based access control (`user`, `helper`, `admin`)
+- Equipment listing and availability view
 - Equipment reservation system
-- Conflict detection
-- Reservation lifecycle (create, cancel, complete)
-- Role-based access (user, helper, admin)
+- Conflict detection for overlapping reservations
+- Long reservations requiring justification and approval
+- Reservation lifecycle management (create, cancel, complete, disrupt)
+- Equipment issue reporting
+- Equipment status management (`available`, `out_of_order`, `decommissioned`)
+- User management and account maintenance
 
 ## Tech Stack
 
 - Backend: Node.js + Express + PostgreSQL
 - Frontend: Angular
-- Testing (planned): Playwright
-- DevOps (planned): Docker + CI/CD
+- Infrastructure: Docker
+- Testing and CI/CD: planned separately
 
 ## Project Status
 
-In active development. Current focus:
-- Reservation system core
-- Approval workflow (next step)
+Core application is functional and stable.
 
 ## Author
 
